@@ -9,10 +9,16 @@ export class HomePage extends BasePage {
   readonly scanInput: Locator;
   readonly exampleContainer: Locator;
   readonly popup: Locator;
+  readonly welcomeText: Locator;
+  readonly createAgentText: Locator ;
+  readonly exploreAgentsText: Locator ; 
 
   constructor(page: Page) {
     super(page);
-    this.logo = page.getByAltText('Walle mascot');
+    this.logo = page.getByAltText('Walle mascot').first();
+    this.welcomeText = page.getByText('Welcome');
+    this.createAgentText = page.getByText('Create Your Agent');
+    this.exploreAgentsText = page.getByText('EXPLORE AGENTS');
     this.scanBestPerformersBtn = page.getByRole('button', { name: 'Scan Best Performers' });
     this.analyzeMarketSentimentBtn = page.getByRole('button', { name: 'Analyze Market Sentiment' });
     this.buildDefiStrategiesBtn = page.getByRole('button', { name: 'Build Defi Strategies' });
@@ -20,11 +26,11 @@ export class HomePage extends BasePage {
     this.exampleContainer = page.locator('.example-questions-container');
     this.popup = page.locator('.example-popup-container');
   }
-
-  async goto() {
-    await super.goto('https://agents.walle.xyz/');
-    await this.page.waitForLoadState('networkidle');
-  }
+  
+async goto() {
+  await super.goto('/');
+  await this.page.waitForLoadState('domcontentloaded');
+}
 
   plusButton(index = 0) {
     return this.exampleContainer.locator('button').nth(index);
