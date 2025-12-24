@@ -8,7 +8,10 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
   home: async ({ page }, use) => {
     const home = new HomePage(page);
-    await home.goto();
+
+    // 🔥 Force clean state before every test
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
     await use(home);
   },
 });

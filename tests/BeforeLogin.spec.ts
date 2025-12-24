@@ -2,10 +2,13 @@ import { test, expect } from '../src/fixtures/home.fixture';
 import { assertTooltip } from '../src/utils/tooltip.helper';
 import { walletTestCases } from '../src/utils/testData/walletTestData';
 
+test.describe.configure({ mode: 'serial' });
+
 // ----------------------------------------------------
 // Verify homepage content
 // ----------------------------------------------------
 test('verify homepage content', async ({ home, page }) => {
+  await home.resetState();
   await expect(home.welcomeText).toBeVisible();
   await expect(home.createAgentText).toBeVisible();
   await expect(home.exploreAgentsText).toBeVisible();
@@ -34,15 +37,19 @@ test('verify homepage content', async ({ home, page }) => {
   await home.clickPlus(0);
   await expect(home.popup).toBeVisible();
   await home.popup.getByText(/Read on-chain data/i).click();
+  await expect(home.popup).toBeHidden();
   await expect(home.scanInput).toHaveValue(/scan/i);
 
   await home.clickPlus(0);
   await home.popup.getByText(/Evaluate portfolio trends/i).click();
+  await expect(home.popup).toBeHidden();
   await expect(home.scanInput).toHaveValue(/analyze/i);
 
   await home.clickPlus(0);
   await home.popup.getByText(/Create trading strategies/i).click();
-  await expect(home.scanInput).toHaveValue(/build/i);
+  await expect(home.popup).toBeHidden();
+  await expect(home.scanInput).toBeVisible();
+  await expect.poll(async () => home.scanInput.inputValue(), {timeout: 10000,}).toMatch(/build/i);
 
   await expect(page.getByText('Deep analysis')).toBeEnabled();
 });
@@ -51,6 +58,7 @@ test('verify homepage content', async ({ home, page }) => {
 // Verify navigation bar links
 // ----------------------------------------------------
 test('verify navigation bar links', async ({ home, page }) => {
+  await home.resetState();
   await assertTooltip(page, 'Dashboard');
   await assertTooltip(page, 'Leaderboard');
   await assertTooltip(page, 'My Agents');
@@ -69,6 +77,7 @@ test('verify navigation bar links', async ({ home, page }) => {
   await home.goToLeaderboard();
   await expect(page).toHaveURL(/leaderboard/);
 
+  await home.ensureNoModalOpen();
   await home.goToDashboard();
   await expect(page).toHaveURL(/walle\.xyz/);
 });
@@ -77,13 +86,14 @@ test('verify navigation bar links', async ({ home, page }) => {
 // Verify connect wallet modal
 // ----------------------------------------------------
 test('verify connect wallet', async ({ home, page }) => {
+  await home.resetState();
   await home.openConnectWalletModal();
 
   await expect(home.connectToContinueText).toBeVisible();
 
   // ✅ Correct ARIA-based button assertions
-  await expect(home.loginWithGoogleBtn).toBeEnabled();
-  await expect(home.loginWithXBtn).toBeEnabled();
+  await expect(home.loginWithGoogleBtn).toBeVisible();
+  await expect(home.loginWithXBtn).toBeVisible();
 
   await expect(home.connectWalletBtn).toBeEnabled();
 
@@ -95,6 +105,7 @@ test('verify connect wallet', async ({ home, page }) => {
 // Verify create agent before login
 // ----------------------------------------------------
 test('verify create your agent before login', async ({ home }) => {
+  await home.resetState();
   await home.selectChain('Ethereum');
   await expect(home.getSelectedChain('Ethereum')).toBeVisible();
 

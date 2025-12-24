@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class HomePage extends BasePage {
@@ -140,6 +140,23 @@ export class HomePage extends BasePage {
   async clickConnectAWalletOption() {
     await this.connectWalletBtn.click();
   }
+  async resetState() {
+  await this.page.goto('/', { waitUntil: 'domcontentloaded' });
+
+  // Close any modal
+  await this.page.keyboard.press('Escape').catch(() => {});
+  
+  await expect(this.page.locator('[role="dialog"]')).toBeHidden();
+}
+
+  async ensureNoModalOpen() {
+  const modal = this.page.locator('[role="dialog"]');
+  if (await modal.isVisible().catch(() => false)) {
+    await this.page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+  }
+}
+
 
   // ---------- Signup ----------
   get signupPrompt(): Locator {
