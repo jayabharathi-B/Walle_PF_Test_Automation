@@ -130,7 +130,7 @@ export class HomePage extends BasePage {
 
   // ---------- Connect wallet ----------
   get connectToContinueText(): Locator {
-    return this.page.getByText('Connect  to Continue');
+    return this.page.getByText('/Connect\s+to\s+Continue/i');
   }
 
   async openConnectWalletModal() {
@@ -140,6 +140,17 @@ export class HomePage extends BasePage {
   async clickConnectAWalletOption() {
     await this.connectWalletBtn.click();
   }
+
+  async closeConnectModal() {
+  const modal = this.page.locator('.fixed.inset-0');
+
+  if (await modal.isVisible().catch(() => false)) {
+    const closeBtn = modal.locator('button:has(svg)').first();
+    await closeBtn.click();
+    await expect(modal).not.toBeAttached();
+  }
+  }
+  
   async resetState() {
   await this.page.goto('/', { waitUntil: 'domcontentloaded' });
 
