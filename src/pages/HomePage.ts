@@ -56,6 +56,7 @@ export class HomePage extends BasePage {
     this.inlineError = page.locator('p.text-red-400');
 
     // ---------- Connect wallet ----------
+    const modal = page.locator('[role="dialog"], .fixed.inset-0');
     this.connectWalletBtn = page.getByRole('button', { name: 'Connect a Wallet' });
     this.loginWithGoogleBtn = page.getByRole('button', { name: 'Login with google' });
     this.loginWithXBtn = page.getByRole('button', { name: 'Login with x' });
@@ -130,7 +131,7 @@ export class HomePage extends BasePage {
 
   // ---------- Connect wallet ----------
   get connectToContinueText(): Locator {
-    return this.page.getByText('Connect  to Continue');
+    return this.page.getByText(/connect\s+to\s+continue/i);
   }
 
   async openConnectWalletModal() {
@@ -153,6 +154,16 @@ export class HomePage extends BasePage {
   const modal = this.page.locator('[role="dialog"]');
   if (await modal.isVisible().catch(() => false)) {
     await this.page.keyboard.press('Escape');
+    await expect(modal).toBeHidden();
+  }
+}
+
+async closeConnectModal() {
+  const modal = this.page.locator('.fixed.inset-0');
+
+  if (await modal.isVisible().catch(() => false)) {
+    const closeBtn = modal.locator('button:has(svg)').first();
+    await closeBtn.click();
     await expect(modal).toBeHidden();
   }
 }
