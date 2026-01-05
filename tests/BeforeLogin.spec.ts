@@ -1,36 +1,29 @@
 import { test, expect } from '../src/fixtures/home.fixture';
-import { assertTooltip } from '../src/utils/tooltip.helper';
 import { walletTestCases } from '../src/utils/testData/walletTestData';
 
 
-
-test.describe.configure({ mode: 'serial' });
+//test.describe.configure({ mode: 'serial' });
 
 
 // ----------------------------------------------------
 // Verify connect wallet modal
 // ----------------------------------------------------
-test('verify connect wallet', async ({ home, page }) => {
+test('verify connect wallet', async ({ home }) => {
   await home.resetState();
   await home.openConnectWalletModal();
 
   await expect(home.connectToContinueText).toBeVisible();
-
-  // ✅ Correct ARIA-based button assertions
-  // await expect(home.loginWithGoogleBtn).toBeVisible();
-  // await expect(home.loginWithXBtn).toBeVisible();
-
   await expect(home.connectWalletBtn).toBeEnabled();
 
   await home.clickConnectAWalletOption();
-  await expect(page.getByText('Back')).toBeVisible();
-  await expect(page.getByText(/new to wallets\?/i)).toBeVisible();
+  await expect(home.connectModal.backBtn).toBeVisible();
+  await expect(home.connectModal.newToWalletsText).toBeVisible();
 });
 
 // ----------------------------------------------------
 // Verify homepage content
 // ----------------------------------------------------
-test('verify homepage content', async ({ home, page }) => {
+test('verify homepage content', async ({ home }) => {
   await home.resetState();
   await expect(home.welcomeText).toBeVisible();
   await expect(home.createAgentText).toBeVisible();
@@ -57,59 +50,49 @@ test('verify homepage content', async ({ home, page }) => {
   const plusBtn = home.plusButton(0);
   await expect(plusBtn).toBeEnabled();
 
-  await home.clickPlus(0);
-  await expect(home.popup).toBeVisible();
-  await home.popup.getByText(/Read on-chain data/i).click();
-  await expect(home.popup).toBeHidden();
+  await home.clickPlusAndSelect(0, /Read on-chain data/i);
   await expect(home.scanInput).toHaveValue(/scan/i);
 
-  await home.clickPlus(0);
-  await home.popup.getByText(/Evaluate portfolio trends/i).click();
-  await expect(home.popup).toBeHidden();
+  await home.clickPlusAndSelect(0, /Evaluate portfolio trends/i);
   await expect(home.scanInput).toHaveValue(/analyze/i);
 
-  await home.clickPlus(0);
-  await home.popup.getByText(/Create trading strategies/i).click();
-  await expect(home.popup).toBeHidden();
+  await home.clickPlusAndSelect(0, /Create trading strategies/i);
   await expect(home.scanInput).toBeVisible();
-  await expect.poll(async () => home.scanInput.inputValue(), {timeout: 10000,}).toMatch(/build/i);
+  await expect.poll(async () => home.scanInput.inputValue(), { timeout: 10000 }).toMatch(/build/i);
 
-  await expect(page.getByText('Deep analysis')).toBeEnabled();
+  await expect(home.deepAnalysisBtn).toBeEnabled();
 });
 
 // ----------------------------------------------------
 // Verify navigation bar links
 // ----------------------------------------------------
-test('verify navigation bar links', async ({ home, page }) => {
+test('verify navigation bar links', async ({ home }) => {
   await home.resetState();
-  await assertTooltip(page, 'Dashboard');
-  await assertTooltip(page, 'Leaderboard');
-  await assertTooltip(page, 'My Agents');
-  await assertTooltip(page, 'Chat');
+  await home.assertTooltip('Dashboard');
+  await home.assertTooltip('Leaderboard');
+  await home.assertTooltip('My Agents');
+  await home.assertTooltip('Chat');
 
   await home.goToMyAgents();
-  await expect(page).toHaveURL(/my-agents/);
+  await home.assertURL(/my-agents/);
   await expect(home.connectToContinueText).toBeVisible({ timeout: 10000 });
   await home.closeConnectModal();
-  await expect(page).toHaveURL(/my-agents/);
+  await home.assertURL(/my-agents/);
 
   await home.goHome();
-  await expect(page).toHaveURL(/walle\.xyz/);
+  await home.assertURL(/walle\.xyz/);
 
   await home.goToChat();
-  await expect(page).toHaveURL(/chat/);
+  await home.assertURL(/chat/);
   await expect(home.connectToContinueText).toBeVisible({ timeout: 10000 });
   await home.closeConnectModal();
-  await expect(page).toHaveURL(/chat/);
+  await home.assertURL(/chat/);
 
   await home.goToDashboard();
-  await expect(page).toHaveURL(/walle\.xyz/);
+  await home.assertURL(/walle\.xyz/);
 
   await home.goToLeaderboard();
-  await expect(page).toHaveURL(/leaderboard/);
-
-  // await home.goToDashboard();
-  // await expect(page).toHaveURL(/walle\.xyz/);
+  await home.assertURL(/leaderboard/);
 });
 
 
@@ -118,14 +101,7 @@ test('verify navigation bar links', async ({ home, page }) => {
 // ----------------------------------------------------
 test('verify create your agent before login', async ({ home }) => {
   await home.resetState();
-  await home.selectChain('Ethereum');
-  await expect(home.getSelectedChain('Ethereum')).toBeVisible();
-
-  await home.enterWallet(
-    '0x8fCb871F786aac849410cD2b068DD252472CdAe9'
-  );
-  await home.clickSearch();
-
+  await home.createAgent('Ethereum', '0x8fCb871F786aac849410cD2b068DD252472CdAe9');
   await expect(home.signupPrompt).toBeVisible();
 });
 
@@ -137,7 +113,7 @@ walletTestCases.forEach(({ title, chain, input, expectsInlineError, expectsSubmi
       await home.selectChain(chain);
       await home.enterWallet(input);
 
-      const error = home.getInlineError();
+      const error = home.getInlineError(); 
       const submitBtn = home.getSubmitButton();
 
       if (expectsInlineError) {
@@ -158,146 +134,75 @@ walletTestCases.forEach(({ title, chain, input, expectsInlineError, expectsSubmi
 // ----------------------------------------------------
 // Explore page tests before login
 // ----------------------------------------------------
-test('Agent profile navigation works from explore page', async ({ home, page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+test('Agent profile navigation works from explore page', async ({ home, explore, agentProfile }) => {
+  await home.setViewport();
   await home.resetState();
+  await home.waitForURL(/walle\.xyz\/?$/);
 
-  await page.waitForURL(/walle\.xyz\/?$/);
+  const agentName = await explore.clickRandomAgent();
 
-  const agentLinks = page.locator('a[href^="/agents/"]');
-  await expect(agentLinks.first()).toBeVisible({ timeout: 15000 });
+  await agentProfile.waitForProfile();
+  await agentProfile.verifyProfileName(agentName);
 
-  const count = await agentLinks.count();
-  const randomIndex = Math.floor(Math.random() * count);
-
-  const selectedAgent = agentLinks.nth(randomIndex);
-
-  const agentNameRaw = await selectedAgent.textContent();
-  const agentName = agentNameRaw?.replace('@', '').trim();
-  expect(agentName).toBeTruthy();
-
-  console.log(`Selected Agent (profile): ${agentName}`);
-
-  await selectedAgent.click();
-
-  // Profile page URL
-  await expect(page).toHaveURL(/\/agents\//);
-
-  // Optional name assertion (only if rendered)
-  const agentNameRegex = new RegExp(agentName!.replace(/\s+/g, '\\s+'), 'i');
-  const profileName = page.locator('header, main').filter({ hasText: agentNameRegex });
-
-  if (await profileName.count()) {
-    await expect(profileName.first()).toBeVisible();
-  }
-
-  // Back to Explore
-  await page.getByRole('button').first().click();
-  await expect(page).toHaveURL(/walle\.xyz\/?$/);
+  await agentProfile.goBack();
+  await home.assertURL(/walle\.xyz\/?$/);
 });
 
-test('Explore page shows agents in all tabs', async ({ home, page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+test('Chat agent guarded actions and back navigation', async ({ home, explore, chat }) => {
+  await home.setViewport();
   await home.resetState();
+  await home.waitForURL(/walle\.xyz\/?$/);
 
-  const tabs = page.getByRole('button', {
-    name: /Most Engaged|Recently Created|Top PnL|Most Followed|Top Score/,
-    includeHidden: true,
-  });
+  const agentName = await explore.selectRandomAgentForChat();
 
-  // Ensure Home / Explore page
-  await page.waitForURL(/walle\.xyz\/?$/);
+  await chat.waitForChatPage();
+  await chat.verifyAgentName(agentName);
 
-  const agentCards = page.locator('[data-name="Agent Chat/Initial Screen"]');
+  await chat.clickSuggestionButton();
+  await home.connectModal.closeIfVisible();
 
-  // Wait for agents to load (data-based)
-  await expect(agentCards.first()).toBeVisible({ timeout: 20000 });
+  await chat.sendMessage('hi');
+  await home.connectModal.closeIfVisible();
 
-  const tabCount = await tabs.count();
-  console.log(`Total tabs found: ${tabCount}`);
-  expect(tabCount).toBeGreaterThan(0);
-
-  // Validate each tab
-  for (let i = 0; i < tabCount; i++) {
-    await tabs.nth(i).click();
-    await expect(agentCards).toHaveCount(15, { timeout: 15000 });
-  }
+  await chat.goBack();
+  await home.assertURL(/walle\.xyz\/?$/);
 });
 
-test('Chat agent guarded actions and back navigation', async ({ home, page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+test('Explore page shows agents in all tabs', async ({ home, explore }) => {
+  await home.setViewport();
   await home.resetState();
+  await explore.validateAllTabs(15);
+});
 
-  await page.waitForURL(/walle\.xyz\/?$/);
+test('Explore agents multi-select and guarded start chat flow', async ({ home, explore, connectModal }) => {
+  await home.resetState();
+  await home.waitForURL(/walle\.xyz\/?$/);
+  await explore.waitForAgentsToLoad();
 
-  const agentCards = page.locator('[data-name="Agent Chat/Initial Screen"]');
-  const agentNameLinks = page.locator('a[href^="/agents/"]');
+  // Select first agent
+  await explore.selectAgents(1);
+  await explore.verifySelectedCount(1);
+  await explore.verifyActionButtonState(false, /add agent/i);
 
-  await expect(agentCards.first()).toBeVisible({ timeout: 15000 });
-  await expect(agentNameLinks.first()).toBeVisible({ timeout: 15000 });
+  // Select second agent
+  await explore.selectAgents(1);
+  await explore.verifySelectedCount(2);
+  await explore.verifyActionButtonState(true, /start chat/i);
 
-  const cardCount = await agentCards.count();
-  const nameCount = await agentNameLinks.count();
+  // Select third agent
+  await explore.selectAgents(1);
+  await explore.verifySelectedCount(3);
+  await explore.verifyActionButtonState(true);
 
-  const index = Math.min(
-    Math.floor(Math.random() * cardCount),
-    nameCount - 1
-  );
+  // Remaining checkboxes should be disabled
+  const remainingCheckboxes = explore.agentCards
+    .nth(3)
+    .getByRole('button');
+  await expect(remainingCheckboxes).toBeDisabled();
 
-  const agentName = (
-    await agentNameLinks.nth(index).textContent()
-  )?.replace('@', '').trim();
+  // Start chat
+  await explore.clickActionButton();
 
-  expect(agentName).toBeTruthy();
-  console.log(`Selected Agent (chat): ${agentName}`);
-
-  const chatClickTarget = agentCards
-    .nth(index)
-    .locator('div')
-    .filter({ has: page.locator('img[data-nimg]') })
-    .first();
-
-  await chatClickTarget.scrollIntoViewIfNeeded();
-  await chatClickTarget.click({ force: true });
-
-  // Chat-agent page
-  await expect(page).toHaveURL(/chat-agent/i, { timeout: 15000 });
-
-  // Optional agent name in chat
-  const chatHeading = page.locator('h1', { hasText: agentName });
-  if (await chatHeading.count()) {
-    await expect(chatHeading).toBeVisible();
-  }
-
-  // Suggestion buttons (guarded)
-  const suggestionButtons = page.locator('button:has-text("/")');
-  if (await suggestionButtons.count()) {
-    await suggestionButtons.first().click({ timeout: 2000, force: true });
-  }
-
-  // Connect modal (conditional)
-  if (await home.connectToContinueText.count()) {
-    await expect(home.connectToContinueText).toBeVisible();
-    await home.closeConnectModal();
-  }
-
-  // Type message + Enter
-  const chatInput = page.locator('textarea');
-  await expect(chatInput).toBeVisible();
-  await chatInput.fill('hi');
-  await chatInput.press('Enter');
-
-  // Modal may reappear
-  if (await home.connectToContinueText.count()) {
-    await expect(home.connectToContinueText).toBeVisible();
-    await home.closeConnectModal();
-  }
-
-  // Back to Home
- 
-  const backBtn = page.getByRole('button', { name: /go\sback/i });
-  await backBtn.scrollIntoViewIfNeeded();
-  await backBtn.click();
-
-  await expect(page).toHaveURL(/walle\.xyz\/?$/);
+  // Assert guarded modal
+  await connectModal.waitForModal();
 });

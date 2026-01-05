@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp remove:*)",
+      "Bash(claude mcp list:*)",
+      "Bash(npx --version)",
+      "Bash(node --version:*)",
+      "Bash(npx:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(tee:*)"
+    ]
+  }
+}

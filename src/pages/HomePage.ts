@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { ConnectModal } from './ConnectModal';
 
 export class HomePage extends BasePage {
   // ---------- Static locators ----------
@@ -26,6 +27,12 @@ export class HomePage extends BasePage {
 
   readonly searchButton: Locator;
   readonly inlineError: Locator;
+  readonly deepAnalysisBtn: Locator;
+  readonly signupPrompt: Locator;
+  readonly connectWalletHeaderBtn: Locator;
+
+  // ---------- Page Objects ----------
+  readonly connectModal: ConnectModal;
 
   constructor(page: Page) {
     super(page);
@@ -40,6 +47,7 @@ export class HomePage extends BasePage {
     this.scanBestPerformersBtn = page.getByText('Scan Best Performers', { exact: true });
     this.analyzeMarketSentimentBtn = page.getByText('Analyze Market Sentiment', { exact: true });
     this.buildDefiStrategiesBtn = page.getByText('Build Defi Strategies', { exact: true });
+    this.deepAnalysisBtn = page.getByText('Deep analysis');
 
     // ---------- Chain selector ----------
     this.chainDropdownTrigger = page.getByRole('button', { name: 'Select Chain' });
@@ -56,9 +64,16 @@ export class HomePage extends BasePage {
     this.inlineError = page.locator('p.text-red-400');
 
     // ---------- Connect wallet ----------
+    this.connectWalletHeaderBtn = page.getByRole('button', { name: 'CONNECT WALLET' });
     this.connectWalletBtn = page.getByRole('button', { name: 'Connect a Wallet' });
     this.loginWithGoogleBtn = page.getByRole('button', { name: 'Login with google' });
     this.loginWithXBtn = page.getByRole('button', { name: 'Login with x' });
+
+    // ---------- Signup ----------
+    this.signupPrompt = page.getByText(/Signup \\(or\\) SignIn to Continue/i);
+
+    // ---------- Page Objects ----------
+    this.connectModal = new ConnectModal(page);
   }
 
   // ---------- Navigation ----------
@@ -130,47 +145,45 @@ export class HomePage extends BasePage {
 
   // ---------- Connect wallet ----------
   get connectToContinueText(): Locator {
-    return this.page.getByText('/Connect\s+to\s+Continue/i');
+    return this.connectModal.connectToContinueText;
   }
 
   async openConnectWalletModal() {
-    await this.page.getByRole('button', { name: 'CONNECT WALLET' }).click();
+    await this.connectWalletHeaderBtn.click();
   }
 
   async clickConnectAWalletOption() {
-    await this.connectWalletBtn.click();
+    await this.connectModal.clickConnectWallet();
   }
 
   async closeConnectModal() {
-  const modal = this.page.locator('.fixed.inset-0');
-
-  if (await modal.isVisible().catch(() => false)) {
-    const closeBtn = modal.locator('button:has(svg)').first();
-    await closeBtn.click();
-    await expect(modal).not.toBeAttached();
-  }
+    await this.connectModal.close();
   }
   
   async resetState() {
-  await this.page.goto('/', { waitUntil: 'domcontentloaded' });
-
-  // Close any modal
-  await this.page.keyboard.press('Escape').catch(() => {});
-  
-  await expect(this.page.locator('[role="dialog"]')).toBeHidden();
-}
+    await this.goto();
+    await this.ensureNoModalOpen();
+  }
 
   async ensureNoModalOpen() {
-  const modal = this.page.locator('[role="dialog"]');
-  if (await modal.isVisible().catch(() => false)) {
-    await this.page.keyboard.press('Escape');
-    await expect(modal).toBeHidden();
+    // Close any modal with Escape
+    await this.page.keyboard.press('Escape').catch(() => {});
+    await expect(this.page.locator('[role="dialog"]')).toBeHidden();
   }
-}
 
+  // ---------- Plus button actions ----------
+  async clickPlusAndSelect(index: number, optionText: RegExp) {
+    await this.clickPlus(index);
+    await expect(this.popup).toBeVisible();
+    await this.popup.getByText(optionText).click();
+    await expect(this.popup).toBeHidden();
+  }
 
-  // ---------- Signup ----------
-  get signupPrompt(): Locator {
-    return this.page.getByText(/Signup \(or\) SignIn to Continue/i);
+  // ---------- Create agent workflow ----------
+  async createAgent(chain: string, walletAddress: string) {
+    await this.selectChain(chain);
+    await expect(this.getSelectedChain(chain)).toBeVisible();
+    await this.enterWallet(walletAddress);
+    await this.clickSearch();
   }
 }
