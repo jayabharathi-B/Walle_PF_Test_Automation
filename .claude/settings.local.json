@@ -13,7 +13,8 @@
       "Bash(timeout 120 npx playwright test:*)",
       "Bash(timeout 10 cat:*)",
       "Bash(cat:*)",
-      "Bash(node scout-leaderboard.js:*)"
+      "Bash(node scout-leaderboard.js:*)",
+      "Bash(timeout 180 npx playwright test:*)"
     ]
   }
 }

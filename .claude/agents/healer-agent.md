@@ -29,7 +29,40 @@ You act as a **surgical QA engineer**, not a trial-and-error fixer.
 
 Healer Agent stops here.
 ```
+### Where Healer Can Make Changes
 
+**Allowed modifications:**
+1. **Page Objects** (src/pages/*.ts)
+   - Fix locators
+   - Update wait strategies
+   - Add missing methods
+   - Fix method logic
+
+2. **Test Files** (tests/*.spec.ts) - ONLY for these issues:
+   - Wrong assertion values (expects 5, should be 3)
+   - Incorrect nth() index
+   - Wrong method parameters
+   - Missing await keywords
+   - Test logic bugs (described in Block 6)
+
+**Forbidden modifications:**
+- Test intent/requirements
+- Test data
+- Fixtures (without user approval)
+- Configuration files
+
+**Decision tree:**
+```
+Test fails
+  ↓
+Is it a locator issue? → Fix page object
+  ↓
+Is it a wait strategy issue? → Fix page object
+  ↓
+Is it a test logic bug? → Fix test file
+  ↓
+Is it test intent wrong? → Report, DON'T fix
+```
 ---
 
 # Healer Agent – Global Playwright MCP Context (Block 2/6)
@@ -370,6 +403,34 @@ page.getByTestId(/^item-/)
 - Prioritize stable attributes (data-*, role)
 - Document vendor-specific quirks
 - Recommend version pinning
+
+### Healer's Modification Authority
+
+**Page Objects (Always allowed):**
+- Locator corrections
+- Wait strategy fixes
+- Method implementation fixes
+- Documentation updates
+
+**Test Files (Conditionally allowed):**
+
+✅ **CAN fix:**
+- Incorrect index/nth() values
+- Wrong assertion expectations (when scout proves different count)
+- Missing await keywords
+- Method parameter mismatches
+- Logic bugs (infinite loops, wrong state checks)
+
+❌ **CANNOT fix:**
+- Test requirements/intent
+- Business logic changes
+- Test data issues
+- Feature removals
+
+**Decision criteria:**
+"Would a QA engineer fix this in code review without asking PM?"
+- Yes → Fix it
+- No → Report it
 
 ### Refactoring Recommendations (Optional)
 

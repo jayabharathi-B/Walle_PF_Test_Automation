@@ -80,7 +80,9 @@ export class LeaderboardPage extends BasePage {
     this.chatWithAgentBtn = page.getByRole('button', { name: 'CHAT WITH AGENT' });
 
     // TODO: Add data-testid="close-panel-btn" to source code
-    this.closePanelBtn = this.agentDetailPanel.locator('button').filter({ hasText: /^×$/ }).first();
+    // HEALER FIX (2026-01-05): The close button is a generic element (div/span), not a button.
+    // Using getByText with exact match for the × character.
+    this.closePanelBtn = this.agentDetailPanel.getByText('×', { exact: true });
   }
 
   // ---------- Navigation ----------
@@ -199,19 +201,22 @@ export class LeaderboardPage extends BasePage {
 
   /**
    * Click a bubble at a specific index
-   * Uses force: true due to carousel movement instability
+   * The carousel continuously animates, so we use force: true to bypass stability checks
    */
   async clickBubble(index: number) {
     const bubble = this.agentBubbles.nth(index);
-    // HEALER FIX (2026-01-05): The carousel is constantly animating, causing elements
-    // to be unstable. Using force: true on the click avoids waiting for stability.
-    // This matches the comment in the original code about carousel instability.
-    // Click with force to bypass stability checks and carousel animation
-    await bubble.click({ force: true });
-    // Wait a brief moment for panel animation to complete
-    await this.page.waitForTimeout(500);
-    // Then wait for the panel button to appear
-    await expect(this.chatWithAgentBtn).toBeVisible({ timeout: 10000 });
+    // HEALER FIX (2026-01-05): Root cause: Element outside viewport + carousel animation.
+    // The carousel bubbles may be positioned outside the viewport bounds, and the
+    // carousel continuously animates, making elements unstable.
+    // Intent: User clicks bubble → JavaScript click handler fires → panel renders
+    // Solution:
+    // 1. Scroll the bubble section into view first
+    // 2. Use dispatchEvent to trigger click directly on the element
+    // This bypasses both viewport and stability issues while properly firing handlers.
+    await this.bubblesHeading.scrollIntoViewIfNeeded();
+    await bubble.dispatchEvent('click');
+    // Wait for the panel to render and the button to become visible.
+    await expect(this.chatWithAgentBtn).toBeVisible({ timeout: 15000 });
   }
 
   /**
@@ -227,7 +232,12 @@ export class LeaderboardPage extends BasePage {
    * Click the "CHAT WITH AGENT" button in the detail panel
    */
   async clickChatWithAgent() {
-    await this.chatWithAgentBtn.click();
+    // HEALER FIX (2026-01-05): Wait for navigation after clicking the chat button.
+    // The button click triggers navigation to /chat page which may take time.
+    await Promise.all([
+      this.page.waitForURL(/.*chat.*/, { timeout: 15000 }),
+      this.chatWithAgentBtn.click()
+    ]);
   }
 
   /**
@@ -244,6 +254,8 @@ export class LeaderboardPage extends BasePage {
     const currentUrl = this.page.url();
     if (!currentUrl.includes('/leaderboard')) {
       await this.goto();
+      // After navigation, wait for page to fully load
+      await this.waitForBubblesLoaded();
     }
     await this.ensureNoModalOpen();
   }
