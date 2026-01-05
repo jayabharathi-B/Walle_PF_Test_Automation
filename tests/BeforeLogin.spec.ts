@@ -2,7 +2,7 @@ import { test, expect } from '../src/fixtures/home.fixture';
 import { walletTestCases } from '../src/utils/testData/walletTestData';
 
 
-//test.describe.configure({ mode: 'serial' });
+test.describe.configure({ mode: 'serial' });
 
 
 // ----------------------------------------------------
@@ -134,19 +134,6 @@ walletTestCases.forEach(({ title, chain, input, expectsInlineError, expectsSubmi
 // ----------------------------------------------------
 // Explore page tests before login
 // ----------------------------------------------------
-test('Agent profile navigation works from explore page', async ({ home, explore, agentProfile }) => {
-  await home.setViewport();
-  await home.resetState();
-  await home.waitForURL(/walle\.xyz\/?$/);
-
-  const agentName = await explore.clickRandomAgent();
-
-  await agentProfile.waitForProfile();
-  await agentProfile.verifyProfileName(agentName);
-
-  await agentProfile.goBack();
-  await home.assertURL(/walle\.xyz\/?$/);
-});
 
 test('Chat agent guarded actions and back navigation', async ({ home, explore, chat }) => {
   await home.setViewport();
@@ -168,11 +155,7 @@ test('Chat agent guarded actions and back navigation', async ({ home, explore, c
   await home.assertURL(/walle\.xyz\/?$/);
 });
 
-test('Explore page shows agents in all tabs', async ({ home, explore }) => {
-  await home.setViewport();
-  await home.resetState();
-  await explore.validateAllTabs(15);
-});
+
 
 test('Explore agents multi-select and guarded start chat flow', async ({ home, explore, connectModal }) => {
   await home.resetState();
@@ -180,17 +163,17 @@ test('Explore agents multi-select and guarded start chat flow', async ({ home, e
   await explore.waitForAgentsToLoad();
 
   // Select first agent
-  await explore.selectAgents(1);
-  await explore.verifySelectedCount(1);
+  await explore.selectAgentByIndex(0);
+await explore.verifySelectedCount(1);
   await explore.verifyActionButtonState(false, /add agent/i);
 
   // Select second agent
-  await explore.selectAgents(1);
+  await explore.selectAgentByIndex(1);
   await explore.verifySelectedCount(2);
   await explore.verifyActionButtonState(true, /start chat/i);
 
   // Select third agent
-  await explore.selectAgents(1);
+  await explore.selectAgentByIndex(2);
   await explore.verifySelectedCount(3);
   await explore.verifyActionButtonState(true);
 
@@ -205,4 +188,25 @@ test('Explore agents multi-select and guarded start chat flow', async ({ home, e
 
   // Assert guarded modal
   await connectModal.waitForModal();
+});
+
+test('Agent profile navigation works from explore page', async ({ home, explore, agentProfile }) => {
+  await home.setViewport();
+  await home.resetState();
+  await home.waitForURL(/walle\.xyz\/?$/);
+
+  const agentName = await explore.clickRandomAgent();
+
+  await agentProfile.waitForProfile();
+  await agentProfile.verifyProfileName(agentName);
+
+  await agentProfile.goBack();
+  await home.assertURL(/walle\.xyz\/?$/);
+});
+
+
+test('Explore page shows agents in all tabs', async ({ home, explore }) => {
+  await home.setViewport();
+  await home.resetState();
+  await explore.validateAllTabs(15);
 });

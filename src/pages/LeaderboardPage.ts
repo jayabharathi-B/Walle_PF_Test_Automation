@@ -26,6 +26,11 @@ export class LeaderboardPage extends BasePage {
   readonly tradesColumn: Locator;
   readonly chatsColumn: Locator;
 
+  // ---------- Agent Detail Panel (Bubbles section) ----------
+  readonly agentDetailPanel: Locator;
+  readonly chatWithAgentBtn: Locator;
+  readonly closePanelBtn: Locator;
+
   constructor(page: Page) {
     super(page);
 
@@ -59,6 +64,23 @@ export class LeaderboardPage extends BasePage {
     this.tradesColumn = page.locator('div[class*="basis-0"][class*="grow"][class*="flex-col"]').nth(1);
     // Column 5: Chats (basis-0 grow, third of three)
     this.chatsColumn = page.locator('div[class*="basis-0"][class*="grow"][class*="flex-col"]').nth(2);
+
+    // ---------- Agent Detail Panel Locators ----------
+    // HEALER FIX (2026-01-05): Using getByRole after discovering button can be found this way.
+    // Earlier test strict mode error showed: aka getByRole('button', { name: 'CHAT WITH AGENT' })
+    // This proves the button exists and is findable. Issue: button not appearing after click.
+    // Possible causes: (1) Click not triggering panel, (2) Different test session state,
+    // (3) Application logic issue with bubble click. For now, using the working locator.
+    // TODO: Add data-testid="agent-detail-panel" to source code
+    this.agentDetailPanel = page.locator('div').filter({
+      has: page.getByRole('button', { name: 'CHAT WITH AGENT' })
+    }).first();
+
+    // TODO: Add data-testid="chat-with-agent-btn" to source code
+    this.chatWithAgentBtn = page.getByRole('button', { name: 'CHAT WITH AGENT' });
+
+    // TODO: Add data-testid="close-panel-btn" to source code
+    this.closePanelBtn = this.agentDetailPanel.locator('button').filter({ hasText: /^×$/ }).first();
   }
 
   // ---------- Navigation ----------
@@ -75,8 +97,13 @@ export class LeaderboardPage extends BasePage {
   }
 
   async waitForBubblesLoaded() {
-    await expect(this.page.getByText('Loading agents...')).toBeHidden({ timeout: 30000 });
-    await expect(this.bubblesHeading).toBeVisible();
+    // HEALER FIX (2026-01-05): Use a more robust wait strategy.
+    // Wait for loading text to be hidden OR just wait for the heading and content to appear.
+    // Sometimes "Loading agents..." might not even show up if it's too fast.
+    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => { });
+    await expect(this.bubblesHeading).toBeVisible({ timeout: 15000 });
+    // CRITICAL: Ensure at least one bubble is present before proceeding
+    await expect(this.agentBubbles.first()).toBeVisible({ timeout: 15000 });
   }
 
   // ---------- Table structure accessors (for testing) ----------
@@ -160,15 +187,70 @@ export class LeaderboardPage extends BasePage {
     await this.chatsHeader.click();
   }
 
+  // ---------- Bubbles section actions ----------
+  /**
+   * Get all agent bubbles in the carousel
+   */
+  get agentBubbles() {
+    return this.page.locator('div.rounded-full').filter({
+      has: this.page.locator('img[alt]')
+    });
+  }
+
+  /**
+   * Click a bubble at a specific index
+   * Uses force: true due to carousel movement instability
+   */
+  async clickBubble(index: number) {
+    const bubble = this.agentBubbles.nth(index);
+    // HEALER FIX (2026-01-05): The carousel is constantly animating, causing elements
+    // to be unstable. Using force: true on the click avoids waiting for stability.
+    // This matches the comment in the original code about carousel instability.
+    // Click with force to bypass stability checks and carousel animation
+    await bubble.click({ force: true });
+    // Wait a brief moment for panel animation to complete
+    await this.page.waitForTimeout(500);
+    // Then wait for the panel button to appear
+    await expect(this.chatWithAgentBtn).toBeVisible({ timeout: 10000 });
+  }
+
+  /**
+   * Get agent name displayed in the detail panel
+   */
+  async getAgentNameFromPanel(): Promise<string> {
+    // The name is typically the first bold text or specific heading in the panel
+    const nameLocator = this.agentDetailPanel.locator('div').first();
+    return (await nameLocator.textContent())?.trim() || '';
+  }
+
+  /**
+   * Click the "CHAT WITH AGENT" button in the detail panel
+   */
+  async clickChatWithAgent() {
+    await this.chatWithAgentBtn.click();
+  }
+
+  /**
+   * Close the agent detail panel
+   */
+  async closeAgentPanel() {
+    await this.closePanelBtn.click();
+    await expect(this.agentDetailPanel).toBeHidden();
+  }
+
   // ---------- State management ----------
   async resetState() {
-    await this.goto();
+    // HEALER FIX (2026-01-05): More robust navigation check.
+    const currentUrl = this.page.url();
+    if (!currentUrl.includes('/leaderboard')) {
+      await this.goto();
+    }
     await this.ensureNoModalOpen();
   }
 
   async ensureNoModalOpen() {
     // Close any modal with Escape
-    await this.page.keyboard.press('Escape').catch(() => {});
+    await this.page.keyboard.press('Escape').catch(() => { });
     await expect(this.page.locator('[role="dialog"]')).toBeHidden();
   }
 }

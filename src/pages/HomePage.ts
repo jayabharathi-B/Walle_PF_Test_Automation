@@ -70,7 +70,9 @@ export class HomePage extends BasePage {
     this.loginWithXBtn = page.getByRole('button', { name: 'Login with x' });
 
     // ---------- Signup ----------
-    this.signupPrompt = page.getByText(/Signup \\(or\\) SignIn to Continue/i);
+    // HEALER FIX: Original regex was overly strict with escaped parentheses
+    // Simplified to flexible case-insensitive pattern
+    this.signupPrompt = page.getByText(/signup.*signin to continue/i);
 
     // ---------- Page Objects ----------
     this.connectModal = new ConnectModal(page);
@@ -92,7 +94,9 @@ export class HomePage extends BasePage {
 
   // ---------- Chain helpers ----------
   getChainOption(chain: string): Locator {
-    return this.page.locator('button span', { hasText: chain }).locator('..');
+    // HEALER FIX: Original locator used unstable parent selector (..)
+    // Changed to select button directly for better stability
+    return this.page.locator('button').filter({ hasText: chain }).first();
   }
 
   getSelectedChain(chain: string): Locator {
@@ -101,6 +105,8 @@ export class HomePage extends BasePage {
 
   async selectChain(chain: string) {
     await this.chainDropdownTrigger.click();
+    // HEALER FIX: Added explicit wait before clicking to prevent timeout
+    await expect(this.getChainOption(chain)).toBeVisible({ timeout: 10000 });
     await this.getChainOption(chain).click();
   }
 
