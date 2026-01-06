@@ -21,7 +21,7 @@ export class ConnectModal extends BasePage {
     this.loginWithXBtn = page.getByRole('button', { name: 'Login with x' });
     this.closeBtn = this.modal.locator('button:has(svg)').first();
     this.backBtn = page.getByText('Back');
-    this.newToWalletsText = page.getByText(/new to wallets\\?/i);
+    this.newToWalletsText = page.getByText(/new to wallets\?/i);
   }
 
   async isVisible(): Promise<boolean> {

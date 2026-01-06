@@ -155,9 +155,10 @@ export class HomePage extends BasePage {
     // Resolution: Click without waiting for navigation, as the URL doesn't change.
     await this.page.getByRole('button', { name: 'Dashboard' }).click();
     // Allow any pending navigation to complete
-    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch((e) => console.warn('Dashboard navigation timeout (expected if already on home):', e));
   }
 
+  
   async goHome() {
     await this.page.getByLabel('Go to home page').click();
   }

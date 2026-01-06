@@ -38,7 +38,14 @@ export class ExplorePage extends BasePage {
 
     const agentNameRaw = await randomAgentLink.textContent();
     const agentName = agentNameRaw?.replace('@', '').trim();
-    expect(agentName).toBeTruthy();
+
+    // HEALER FIX (2026-01-06):
+    // Root cause: Non-null assertion (!) used after optional chaining, creating type safety gap
+    // Resolution: Explicit null check with descriptive error instead of expect().toBeTruthy()
+    // Intent: User clicking on random agent link to view profile
+    if (!agentName) {
+      throw new Error('Agent name not found - textContent() returned null or empty string');
+    }
 
     console.log(`Selected Agent (profile): ${agentName}`);
 
@@ -52,7 +59,7 @@ export class ExplorePage extends BasePage {
       randomAgentLink.click(),
     ]);
 
-    return agentName!;
+    return agentName;
   }
 
   async clickAgentChatCard(index: number): Promise<string> {
@@ -60,7 +67,14 @@ export class ExplorePage extends BasePage {
       await this.agentNameLinks.nth(index).textContent()
     )?.replace('@', '').trim();
 
-    expect(agentName).toBeTruthy();
+    // HEALER FIX (2026-01-06):
+    // Root cause: Non-null assertion (!) used after optional chaining, creating type safety gap
+    // Resolution: Explicit null check with descriptive error instead of expect().toBeTruthy()
+    // Intent: User clicking on agent chat card to start conversation
+    if (!agentName) {
+      throw new Error(`Agent name not found at index ${index} - textContent() returned null or empty string`);
+    }
+
     console.log(`Selected Agent (chat): ${agentName}`);
 
     const chatClickTarget = this.agentCards
@@ -72,7 +86,7 @@ export class ExplorePage extends BasePage {
     await chatClickTarget.scrollIntoViewIfNeeded();
     await chatClickTarget.click({ force: true });
 
-    return agentName!;
+    return agentName;
   }
 
   async selectRandomAgentForChat(): Promise<string> {
