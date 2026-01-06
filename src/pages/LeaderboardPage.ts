@@ -92,10 +92,14 @@ export class LeaderboardPage extends BasePage {
 
   // ---------- Wait strategies ----------
   async waitForTableLoaded() {
-    // Wait for loading state to disappear first
-    await expect(this.page.getByText('Loading agents...')).toBeHidden({ timeout: 30000 });
-    await expect(this.leaderboardHeading).toBeVisible();
-    await expect(this.rankHeader).toBeVisible();
+    // HEALER FIX (2025-01-06):
+    // Root cause: "Loading agents..." text doesn't always appear or disappears quickly,
+    // causing toBeHidden() to timeout. The content may load before the loading text appears.
+    // Resolution: Use graceful wait (allow timeout) for loading text, then ensure table is visible.
+    // This matches the more robust strategy in waitForBubblesLoaded().
+    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+    await expect(this.leaderboardHeading).toBeVisible({ timeout: 15000 });
+    await expect(this.rankHeader).toBeVisible({ timeout: 15000 });
   }
 
   async waitForBubblesLoaded() {

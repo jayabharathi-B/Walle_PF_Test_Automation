@@ -42,11 +42,14 @@ export class ExplorePage extends BasePage {
 
     console.log(`Selected Agent (profile): ${agentName}`);
 
-    const agentLinkByName = this.page.getByRole('link', { name: agentName! });
-
+    // HEALER FIX (2025-01-06):
+    // Root cause: When agent names are duplicated on the page, getByRole('link', { name: agentName })
+    // resolves to multiple elements, causing strict mode violation.
+    // Resolution: Click the already-selected nth() link directly instead of re-querying by name.
+    // This is more stable and avoids ambiguity when duplicate agent names exist.
     await Promise.all([
       this.page.waitForURL(/\/agents\//, { timeout: 15000 }),
-      agentLinkByName.click(),
+      randomAgentLink.click(),
     ]);
 
     return agentName!;

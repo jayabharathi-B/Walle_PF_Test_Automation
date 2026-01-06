@@ -130,19 +130,32 @@ export class HomePage extends BasePage {
 
   // ---------- Navbar navigation ----------
   async goToMyAgents() {
-    await this.page.locator('nav >> div', { hasText: 'My Agents' }).first().click();
+    // HEALER FIX (2025-01-06):
+    // Root cause: Click completes but navigation may not finish before assertion
+    // Resolution: Wait for navigation URL to change using waitForLoadState which is more lenient
+    await this.page.getByRole('button', { name: 'My Agents' }).click();
+    await this.page.waitForURL(/\/my-agents/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
   async goToChat() {
-    await this.page.locator('nav >> div', { hasText: 'Chat' }).first().click();
+    // HEALER FIX (2025-01-06): Wait for navigation to complete
+    await this.page.getByRole('button', { name: 'Chat' }).click();
+    await this.page.waitForURL(/\/chat/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
   async goToLeaderboard() {
-    await this.page.locator('nav >> div', { hasText: 'Leaderboard' }).first().click();
+    // HEALER FIX (2025-01-06): Wait for navigation to complete
+    await this.page.getByRole('button', { name: 'Leaderboard' }).click();
+    await this.page.waitForURL(/\/leaderboard/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
   async goToDashboard() {
-    await this.page.locator('nav >> div', { hasText: 'Dashboard' }).first().click();
+    // HEALER FIX (2025-01-06):
+    // Root cause: Dashboard button doesn't navigate to a separate page; it's a no-op when already on home.
+    // Resolution: Click without waiting for navigation, as the URL doesn't change.
+    await this.page.getByRole('button', { name: 'Dashboard' }).click();
+    // Allow any pending navigation to complete
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
   async goHome() {
