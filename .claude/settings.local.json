@@ -15,7 +15,9 @@
       "Bash(cat:*)",
       "Bash(node scout-leaderboard.js:*)",
       "Bash(timeout 180 npx playwright test:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(del testsdebug-cancel-button.spec.ts)",
+      "Bash(del testsdebug-agent-name.spec.ts)"
     ]
   }
 }

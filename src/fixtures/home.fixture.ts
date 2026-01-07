@@ -5,6 +5,7 @@ import { AgentProfilePage } from '../pages/AgentProfilePage';
 import { ChatPage } from '../pages/ChatPage';
 import { ConnectModal } from '../pages/ConnectModal';
 import { LeaderboardPage } from '../pages/LeaderboardPage';
+import { AgentSelectionFlow } from '../pages/AgentSelectionFlow';
 
 type Fixtures = {
   home: HomePage;
@@ -13,6 +14,7 @@ type Fixtures = {
   chat: ChatPage;
   connectModal: ConnectModal;
   leaderboard: LeaderboardPage;
+  agentSelection: AgentSelectionFlow;
 };
 
 export const test = base.extend<Fixtures>({
@@ -46,6 +48,12 @@ export const test = base.extend<Fixtures>({
     const leaderboard = new LeaderboardPage(page);
     await page.goto('/leaderboard', { waitUntil: 'networkidle' });
     await use(leaderboard);
+  },
+
+  agentSelection: async ({ page }, use) => {
+    const agentSelection = new AgentSelectionFlow(page);
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await use(agentSelection);
   },
 });
 

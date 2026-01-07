@@ -532,6 +532,43 @@ After writing code:
 5. ❌ DO NOT try to fix failures
 6. ❌ DO NOT iterate on the code
 
+## Test Granularity Rules
+
+### Combine tests when they test the SAME USER FLOW:
+
+✅ **Do combine:**
+- Multiple verifications of the same element
+- Sequential steps in a single interaction
+- Related UI states in the same component
+
+❌ **Don't combine:**
+- Different user journeys
+- Independent features
+- Edge cases vs happy path
+
+### Examples:
+
+**BAD (too granular):**
+```typescript
+test('button exists')
+test('button is enabled')
+test('button has text')
+test('button is clickable')
+```
+
+**GOOD (logical grouping):**
+```typescript
+test('verify button functionality', async () => {
+  await expect(button).toBeVisible();
+  await expect(button).toBeEnabled();
+  await expect(button).toHaveText('Click me');
+  await button.click();
+});
+```
+
+### Guiding Principle:
+**"One test per user intention, not one test per assertion"**
+
 **Handoff to user:**
 ```
 Files created. User will:

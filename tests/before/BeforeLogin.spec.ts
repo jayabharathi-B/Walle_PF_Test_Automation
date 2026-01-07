@@ -1,5 +1,5 @@
-import { test, expect } from '../src/fixtures/home.fixture';
-import { walletTestCases } from '../src/utils/testData/walletTestData';
+import { test, expect } from '../../src/fixtures/home.fixture';
+import { walletTestCases } from '../../src/utils/testData/walletTestData';
 
 
 test.describe.configure({ mode: 'serial' });
