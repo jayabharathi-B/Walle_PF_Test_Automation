@@ -155,10 +155,10 @@ export class HomePage extends BasePage {
     // Resolution: Click without waiting for navigation, as the URL doesn't change.
     await this.page.getByRole('button', { name: 'Dashboard' }).click();
     // Allow any pending navigation to complete
-    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch((e) => console.warn('Dashboard navigation timeout (expected if already on home):', e));
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => { });
   }
 
-  
+
   async goHome() {
     await this.page.getByLabel('Go to home page').click();
   }
@@ -179,7 +179,7 @@ export class HomePage extends BasePage {
   async closeConnectModal() {
     await this.connectModal.close();
   }
-  
+
   async resetState() {
     await this.goto();
     await this.ensureNoModalOpen();
@@ -193,7 +193,7 @@ export class HomePage extends BasePage {
 
   async ensureNoModalOpen() {
     // Close any modal with Escape
-    await this.page.keyboard.press('Escape').catch(() => {});
+    await this.page.keyboard.press('Escape').catch(() => { });
     await expect(this.page.locator('[role="dialog"]')).toBeHidden();
   }
 

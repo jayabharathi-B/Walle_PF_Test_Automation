@@ -56,7 +56,6 @@ test.describe('Leaderboard Bubbles Section', () => {
     // ----------------------------------------------------
     test('verify clicking chat with agent navigates to chat page', async ({ leaderboard, page }) => {
         await leaderboard.clickBubble(0);
-        const agentName = await leaderboard.getAgentNameFromPanel();
 
         await leaderboard.clickChatWithAgent();
 

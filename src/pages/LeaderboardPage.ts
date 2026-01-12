@@ -241,7 +241,7 @@ export class LeaderboardPage extends BasePage {
     // Resolution: Click first, then wait for URL change
     // Intent: Navigate to chat page after clicking the button
     await this.chatWithAgentBtn.click();
-    await this.page.waitForURL(/.*chat.*/, { timeout: 15000 });
+    await this.page.waitForURL(/.*chat-agent.*/, { timeout: 15000 });
   }
 
   /**

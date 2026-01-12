@@ -47,8 +47,6 @@ export class ExplorePage extends BasePage {
       throw new Error('Agent name not found - textContent() returned null or empty string');
     }
 
-    console.log(`Selected Agent (profile): ${agentName}`);
-
     // HEALER FIX (2025-01-06):
     // Root cause: When agent names are duplicated on the page, getByRole('link', { name: agentName })
     // resolves to multiple elements, causing strict mode violation.
@@ -74,8 +72,6 @@ export class ExplorePage extends BasePage {
     if (!agentName) {
       throw new Error(`Agent name not found at index ${index} - textContent() returned null or empty string`);
     }
-
-    console.log(`Selected Agent (chat): ${agentName}`);
 
     const chatClickTarget = this.agentCards
       .nth(index)
@@ -116,7 +112,6 @@ export class ExplorePage extends BasePage {
     await this.waitForAgentsToLoad();
 
     const tabCount = await this.getTabCount();
-    console.log(`Total tabs found: ${tabCount}`);
     expect(tabCount).toBeGreaterThan(0);
 
     for (let i = 0; i < tabCount; i++) {
@@ -127,11 +122,10 @@ export class ExplorePage extends BasePage {
       await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
       const count = await this.agentCards.count();
-      console.log(`Agents in tab ${i}: ${count}`);
 
       // HEALER FIX: Changed exact match to allow for variation in agent counts per tab
       // Some tabs may have fewer agents than the target count
-      expect(count).toBeGreaterThanOrEqual(expectedAgentCount );
+      expect(count).toBeGreaterThanOrEqual(expectedAgentCount);
     }
   }
 
@@ -142,15 +136,12 @@ export class ExplorePage extends BasePage {
   }
 
   getSelectedAgentsBar(): Locator {
-  return this.page.locator('div.fixed.bottom-6');
-}
+    return this.page.locator('div.fixed.bottom-6');
+  }
 
- 
   getSelectedAvatars(): Locator {
-  return this.page.locator(
-    'div.fixed.bottom-6 img.rounded-full'
-  );
-}
+    return this.page.locator('div.fixed.bottom-6 img.rounded-full');
+  }
 
 
   getActionButton(): Locator {
@@ -159,23 +150,16 @@ export class ExplorePage extends BasePage {
     });
   }
 
-async selectAgentByIndex(index: number) {
-  const checkbox = this.getCheckboxAt(index);
-  await expect(checkbox).toBeVisible();
-  await checkbox.click();
-}
-
-
+  async selectAgentByIndex(index: number) {
+    const checkbox = this.getCheckboxAt(index);
+    await expect(checkbox).toBeVisible();
+    await checkbox.click();
+  }
 
   async verifySelectedCount(count: number) {
-  const avatars = this.getSelectedAvatars();
-
-  await expect
-    .poll(async () => await avatars.count(), {
-      timeout: 10000,
-    })
-    .toBe(count);
-}
+    const avatars = this.getSelectedAvatars();
+    await expect.poll(async () => await avatars.count(), { timeout: 10000 }).toBe(count);
+  }
 
 
 
