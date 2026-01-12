@@ -61,7 +61,7 @@ test.describe('Leaderboard Bubbles Section', () => {
         await leaderboard.clickChatWithAgent();
 
         // Verify URL contains /chat or appropriate path
-        await expect(page).toHaveURL(/.*chat.*/);
+        await expect(page).toHaveURL(/.*chat-agent.*/);
     });
 
     // ----------------------------------------------------

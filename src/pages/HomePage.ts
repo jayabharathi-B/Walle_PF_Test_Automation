@@ -183,6 +183,12 @@ export class HomePage extends BasePage {
   async resetState() {
     await this.goto();
     await this.ensureNoModalOpen();
+
+    // HEALER FIX (2026-01-12): Wait for page to be fully ready
+    // Root cause: domcontentloaded is too early, page elements may not be interactive yet
+    // Resolution: Wait for key element (welcome text) to be visible
+    // Intent: Ensure page is fully loaded before test assertions
+    await expect(this.welcomeText).toBeVisible({ timeout: 10000 });
   }
 
   async ensureNoModalOpen() {

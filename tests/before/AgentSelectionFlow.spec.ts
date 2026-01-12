@@ -244,10 +244,7 @@ test('STEP 5: verify 3-agent limit disables remaining agents', async ({ agentSel
 
   /* -------------------- FINAL VALIDATION -------------------- */
 
-  // Wait for explore modal to fully close and agents to be processed
-  await agentSelection.page.waitForTimeout(3000);
-
-  // Verify thumbnails appear
+  // Verify thumbnails appear (expect.poll handles dynamic waiting)
   await expect.poll(
     () => agentSelection.getAgentThumbnailCount(),
     { timeout: 15000, intervals: [500] }

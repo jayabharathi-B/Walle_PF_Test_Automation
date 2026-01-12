@@ -236,12 +236,12 @@ export class LeaderboardPage extends BasePage {
    * Click the "CHAT WITH AGENT" button in the detail panel
    */
   async clickChatWithAgent() {
-    // HEALER FIX (2026-01-05): Wait for navigation after clicking the chat button.
-    // The button click triggers navigation to /chat page which may take time.
-    await Promise.all([
-      this.page.waitForURL(/.*chat.*/, { timeout: 15000 }),
-      this.chatWithAgentBtn.click()
-    ]);
+    // HEALER FIX (2026-01-12): Click then wait for navigation
+    // Root cause: Promise.all expects simultaneous operations, but navigation happens after click
+    // Resolution: Click first, then wait for URL change
+    // Intent: Navigate to chat page after clicking the button
+    await this.chatWithAgentBtn.click();
+    await this.page.waitForURL(/.*chat.*/, { timeout: 15000 });
   }
 
   /**

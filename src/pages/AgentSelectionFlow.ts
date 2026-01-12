@@ -44,7 +44,11 @@ export class AgentSelectionFlow extends BasePage {
     super(page);
 
     // ---------- Homepage elements ----------
-    this.addAgentsButton = page.getByRole('button', { name: 'Add Agents' });
+    // HEALER FIX (2026-01-12): Use partial match for button text
+    // Root cause: Button text changes to "+1 Add Agents", "+2 Add Agents" after agents are selected
+    // Resolution: Match any button containing "Add Agents" text
+    // Intent: Work in both initial state and after agents are added (serial mode)
+    this.addAgentsButton = page.getByRole('button', { name: /Add Agents/i });
 
     // HEALER FIX (2025-01-06):
     // Root cause: page.getByRole('textbox') matches 2 elements (chat input + wallet input)
@@ -349,11 +353,11 @@ async selectAgentInExplore(index: number) {
   }
 
   async clickTab(tabName: 'Most Engaged' | 'Recently Created' | 'Top PnL' | 'Most Followed' | 'Top Score') {
-    // HEALER FIX (2026-01-07):
-    // Root cause: Tab buttons exist in both homepage Explore section AND Explore modal
-    // Resolution: Use .last() to select modal tab (modal rendered last in DOM)
+    // HEALER FIX (2026-01-12): Use force click due to portal overlays
+    // Root cause: Modal has decorative mask/overlay elements that intercept pointer events
+    // Resolution: Use { force: true } to click through the overlay
     // Intent: User clicking tab in Explore modal
-    await this.page.getByRole('button', { name: tabName }).last().click();
+    await this.page.getByRole('button', { name: tabName }).last().click({ force: true });
   }
 
   async addAgentsFromExplore() {
@@ -386,15 +390,13 @@ async selectAgentInExplore(index: number) {
       console.log('✅ Force click succeeded');
     }
 
-    // Wait for modal to close and agents to be added
-    // The modal fadeout animation and agent processing takes time
-    // HEALER FIX (2026-01-11): Increased wait time for agent processing
-    // Some agents may take longer to render as thumbnails after the modal closes
-    await this.page.waitForTimeout(5000);
-
-    console.log('Modal close button hidden status check...');
-    const isHidden = await this.exploreModalCloseBtn.isHidden();
-    console.log(`Modal close button hidden: ${isHidden}`);
+    // Wait for modal to close dynamically
+    // HEALER FIX (2026-01-12): Replaced hard-coded 5s timeout with dynamic wait
+    // Resolution: Wait for modal close button to be hidden (indicates modal closed)
+    // Intent: Reduce test execution time and avoid timeout issues
+    console.log('Waiting for modal to close...');
+    await expect(this.exploreModalCloseBtn).toBeHidden({ timeout: 10000 });
+    console.log('✅ Modal closed successfully');
   }
 
   async cancelExplore() {
@@ -472,11 +474,25 @@ async selectAgentInExplore(index: number) {
   async resetState() {
     await this.goto();
     await this.ensureNoModalOpen();
+
+    // HEALER FIX (2026-01-12): Wait for page to be fully ready
+    // Root cause: domcontentloaded is too early, page elements may not be interactive yet
+    // Resolution: Wait for key element (Add Agents button) to be visible
+    // Intent: Ensure page is fully loaded before test assertions (regex match works in all states)
+    await expect(this.addAgentsButton).toBeVisible({ timeout: 10000 });
   }
 
   async ensureNoModalOpen() {
-    await this.page.keyboard.press('Escape').catch(() => {});
+    // HEALER FIX (2026-01-12): More robust modal closing for serial mode
+    // Press Escape multiple times to ensure all modals/overlays are dismissed
+    for (let i = 0; i < 3; i++) {
+      await this.page.keyboard.press('Escape').catch(() => {});
+      await this.page.waitForTimeout(100);
+    }
+
+    // Wait for dialogs and portal overlays to be hidden
     await expect(this.page.locator('[role="dialog"]')).toBeHidden({ timeout: 5000 }).catch(() => {});
+    await expect(this.page.locator('[data-portal="safe-portal"]')).toBeHidden({ timeout: 5000 }).catch(() => {});
   }
 
   // ---------- 3-agent limit verification ----------
