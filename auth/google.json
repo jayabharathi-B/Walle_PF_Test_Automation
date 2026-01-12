@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "https://aistg.walle.xyz",
+      "localStorage": [
+        {
+          "name": "accessFeatures",
+          "value": "false"
+        },
+        {
+          "name": "chatStarted",
+          "value": "false"
+        }
+      ]
+    }
+  ]
+}

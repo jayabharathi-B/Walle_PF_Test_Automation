@@ -25,6 +25,7 @@ test('verify connect wallet', async ({ home }) => {
 // ----------------------------------------------------
 test('verify homepage content', async ({ home }) => {
   await home.resetState();
+  await home.page.reload();
   await expect(home.welcomeText).toBeVisible();
   await expect(home.createAgentText).toBeVisible();
   await expect(home.exploreAgentsText).toBeVisible();
