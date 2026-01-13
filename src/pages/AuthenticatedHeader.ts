@@ -1,0 +1,70 @@
+import { Page, Locator, expect } from '@playwright/test';
+import { BasePage } from './BasePage';
+
+export class AuthenticatedHeader extends BasePage {
+  readonly walletAddressButton: Locator;
+  readonly walletDropdown: Locator;
+  readonly disconnectButton: Locator;
+
+  constructor(page: Page) {
+    super(page);
+
+    // Wallet address button showing truncated address (e.g., "0x6c0F...52D6")
+    this.walletAddressButton = page.locator('button').filter({ hasText: /0x[a-fA-F0-9]{4}\.\.\.[a-fA-F0-9]{4}/ });
+
+    // Dropdown container that appears after clicking wallet button
+    this.walletDropdown = page.locator('.absolute.right-0.mt-2.w-56.bg-\\[\\#151515\\]');
+
+    // Disconnect wallet button in dropdown
+    this.disconnectButton = page.getByText('Disconnect Wallet');
+  }
+
+  /**
+   * Get the displayed wallet address text from the button
+   * @returns The truncated wallet address (e.g., "0x6c0F...52D6")
+   */
+  async getWalletAddress(): Promise<string> {
+    return (await this.walletAddressButton.textContent()) || '';
+  }
+
+  /**
+   * Open the wallet dropdown by clicking the wallet address button
+   */
+  async openWalletDropdown() {
+    await this.walletAddressButton.click();
+    await expect(this.walletDropdown).toBeVisible({ timeout: 5000 });
+  }
+
+  /**
+   * Click the disconnect button in the dropdown
+   * This will log the user out and return to unauthenticated state
+   */
+  async clickDisconnect() {
+    await this.disconnectButton.click();
+  }
+
+  /**
+   * Check if user is in authenticated state
+   * @returns true if wallet button is visible, false otherwise
+   */
+  async isAuthenticated(): Promise<boolean> {
+    return await this.walletAddressButton.isVisible().catch(() => false);
+  }
+
+  /**
+   * Check if dropdown is currently open
+   * @returns true if dropdown is visible, false otherwise
+   */
+  async isDropdownOpen(): Promise<boolean> {
+    return await this.walletDropdown.isVisible().catch(() => false);
+  }
+
+  /**
+   * Close the dropdown by clicking outside of it
+   */
+  async closeDropdown() {
+    // Click on the page body to close dropdown
+    await this.page.locator('body').click({ position: { x: 100, y: 100 } });
+    await expect(this.walletDropdown).toBeHidden({ timeout: 5000 });
+  }
+}

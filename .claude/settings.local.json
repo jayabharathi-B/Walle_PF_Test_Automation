@@ -17,7 +17,12 @@
       "Bash(timeout 180 npx playwright test:*)",
       "Bash(dir:*)",
       "Bash(del testsdebug-cancel-button.spec.ts)",
-      "Bash(del testsdebug-agent-name.spec.ts)"
+      "Bash(del testsdebug-agent-name.spec.ts)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_evaluate",
+      "Bash(ls:*)",
+      "Bash(find:*)"
     ]
   }
 }
