@@ -6,6 +6,9 @@ import { ChatPage } from '../pages/ChatPage';
 import { ConnectModal } from '../pages/ConnectModal';
 import { LeaderboardPage } from '../pages/LeaderboardPage';
 import { AgentSelectionFlow } from '../pages/AgentSelectionFlow';
+import { AuthenticatedHeader } from '../pages/AuthenticatedHeader';
+import { CreditsPage } from '../pages/CreditsPage';
+import { PurchaseModal } from '../pages/PurchaseModal';
 
 type Fixtures = {
   home: HomePage;
@@ -15,6 +18,9 @@ type Fixtures = {
   connectModal: ConnectModal;
   leaderboard: LeaderboardPage;
   agentSelection: AgentSelectionFlow;
+  authenticatedHeader: AuthenticatedHeader;
+  creditsPage: CreditsPage;
+  purchaseModal: PurchaseModal;
 };
 
 export const test = base.extend<Fixtures>({
@@ -54,6 +60,21 @@ export const test = base.extend<Fixtures>({
     const agentSelection = new AgentSelectionFlow(page);
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await use(agentSelection);
+  },
+
+  authenticatedHeader: async ({ page }, use) => {
+    const authenticatedHeader = new AuthenticatedHeader(page);
+    await use(authenticatedHeader);
+  },
+
+  creditsPage: async ({ page }, use) => {
+    const creditsPage = new CreditsPage(page);
+    await use(creditsPage);
+  },
+
+  purchaseModal: async ({ page }, use) => {
+    const purchaseModal = new PurchaseModal(page);
+    await use(purchaseModal);
   },
 });
 

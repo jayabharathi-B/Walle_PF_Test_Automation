@@ -69,31 +69,38 @@ test('verify homepage content', async ({ home }) => {
 // ----------------------------------------------------
 test('verify navigation bar links', async ({ home }) => {
   await home.resetState();
-  await home.assertTooltip('Dashboard');
-  await home.assertTooltip('Leaderboard');
-  await home.assertTooltip('My Agents');
-  await home.assertTooltip('Chat');
+
+  // Verify tooltips for navigation buttons
+  for (const buttonName of ['Dashboard', 'Leaderboard', 'My Agents', 'Chat']) {
+    const btn = home.page.getByRole('button', { name: buttonName });
+    const group = btn.locator('..');
+    await group.hover();
+    const tooltip = home.page.locator(`div.pointer-events-none:has-text("${buttonName}")`);
+    await expect(tooltip).toBeVisible();
+    await home.page.mouse.move(0, 0);
+    await expect(tooltip).toHaveCSS('opacity', '0');
+  }
 
   await home.goToMyAgents();
-  await home.assertURL(/my-agents/);
+  await expect(home.page).toHaveURL(/my-agents/);
   await expect(home.connectToContinueText).toBeVisible({ timeout: 10000 });
   await home.closeConnectModal();
-  await home.assertURL(/my-agents/);
+  await expect(home.page).toHaveURL(/my-agents/);
 
   await home.goHome();
-  await home.assertURL(/walle\.xyz/);
+  await expect(home.page).toHaveURL(/walle\.xyz/);
 
   await home.goToChat();
-  await home.assertURL(/chat/);
+  await expect(home.page).toHaveURL(/chat/);
   await expect(home.connectToContinueText).toBeVisible({ timeout: 10000 });
   await home.closeConnectModal();
-  await home.assertURL(/chat/);
+  await expect(home.page).toHaveURL(/chat/);
 
   await home.goToDashboard();
-  await home.assertURL(/walle\.xyz/);
+  await expect(home.page).toHaveURL(/walle\.xyz/);
 
   await home.goToLeaderboard();
-  await home.assertURL(/leaderboard/);
+  await expect(home.page).toHaveURL(/leaderboard/);
 });
 
 
@@ -153,7 +160,7 @@ test('Chat agent guarded actions and back navigation', async ({ home, explore, c
   await home.connectModal.closeIfVisible();
 
   await chat.goBack();
-  await home.assertURL(/walle\.xyz\/?$/);
+  await expect(home.page).toHaveURL(/walle\.xyz\/?$/);
 });
 
 
@@ -165,7 +172,7 @@ test('Explore agents multi-select and guarded start chat flow', async ({ home, e
 
   // Select first agent
   await explore.selectAgentByIndex(0);
-await explore.verifySelectedCount(1);
+  await explore.verifySelectedCount(1);
   await explore.verifyActionButtonState(false, /add agent/i);
 
   // Select second agent
@@ -202,7 +209,7 @@ test('Agent profile navigation works from explore page', async ({ home, explore,
   await agentProfile.verifyProfileName(agentName);
 
   await agentProfile.goBack();
-  await home.assertURL(/walle\.xyz\/?$/);
+  await expect(home.page).toHaveURL(/walle\.xyz\/?$/);
 });
 
 

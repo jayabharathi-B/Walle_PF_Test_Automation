@@ -32,7 +32,7 @@ test('STEP 1: verify homepage initial elements', async ({ agentSelection }) => {
 
   // Verify send button is disabled when input is empty
   await agentSelection.chatInput.clear();
-  await agentSelection.verifySendButtonDisabled();
+  await expect(agentSelection.sendButton).toBeDisabled();
 });
 
 // ====================================================================
@@ -55,7 +55,9 @@ test('STEP 2: verify Quick Select modal opens with 5 agents', async ({ agentSele
   expect(counter).toBe('0');
 
   // Verify 5 OG agents are displayed
-  await agentSelection.verifyQuickSelectAgentCount(5);
+  await expect(agentSelection.quickSelectAgentCards.nth(4)).toBeVisible({ timeout: 10000 });
+  const totalCount = await agentSelection.quickSelectAgentCards.count();
+  expect(totalCount).toBeGreaterThanOrEqual(5);
 });
 
 // ----------------------------------------------------
@@ -133,7 +135,6 @@ test('STEP 4: verify Explore Agents modal opens and displays tabs', async ({ age
   const selectButtons = agentSelection.page.getByRole('button', { name: 'Select agent' });
   const count = await selectButtons.count();
   expect(count).toBeGreaterThan(0);
-  console.log(`Explore modal displays ${count} agents.`);
 });
 
 // ----------------------------------------------------
@@ -183,7 +184,7 @@ test('STEP 5: verify selecting 2 different agents in Explore', async ({ agentSel
   await agentSelection.openExploreAgentsModal();
 
   // Wait for Explore agents to load and modal transition
-  await agentSelection.page.waitForTimeout(1000);
+  await expect(agentSelection.exploreSelectButtons.first()).toBeVisible({ timeout: 5000 });
 
   // Select first available agent (index 0 of "Select agent" buttons = first unselected agent)
   // The already-selected agent from Quick Select will show "Deselect agent" and won't be counted
@@ -193,7 +194,6 @@ test('STEP 5: verify selecting 2 different agents in Explore', async ({ agentSel
   const selectButtons = agentSelection.page.getByRole('button', { name: 'Select agent' });
   const enabledCount = await selectButtons.count();
   expect(enabledCount).toBeGreaterThan(0);
-  console.log(`Number of enabled agents after selecting 2: ${enabledCount}`);
 });
 
 // ----------------------------------------------------
@@ -215,7 +215,6 @@ test('STEP 5: verify 3-agent limit disables remaining agents', async ({ agentSel
   )?.trim();
 
   expect(firstAgentName).toBeTruthy();
-  console.log(`Quick Select agent: ${firstAgentName}`);
 
   // Use the page object method for selecting agents in Quick Select (more reliable than keyboard)
   await agentSelection.selectAgentInQuickSelect(0);
@@ -231,13 +230,7 @@ test('STEP 5: verify 3-agent limit disables remaining agents', async ({ agentSel
   // The method uses exploreSelectButtons which filters for "Select agent" role only
   // After each selection, indices shift, so always select index 0 for "first unselected"
   await agentSelection.selectAgentInExplore(0);
-  await agentSelection.page.waitForTimeout(500);
-
   await agentSelection.selectAgentInExplore(0);
-  await agentSelection.page.waitForTimeout(500);
-
-  const finalDeselectCount = await agentSelection.page.getByRole('button', { name: 'Deselect agent' }).count();
-  console.log(`Total agents selected: ${finalDeselectCount}`);
 
   // Add agents to chat
   await agentSelection.addAgentsFromExplore();
@@ -249,8 +242,6 @@ test('STEP 5: verify 3-agent limit disables remaining agents', async ({ agentSel
     () => agentSelection.getAgentThumbnailCount(),
     { timeout: 15000, intervals: [500] }
   ).toBe(3);
-
-  console.log('✅ STEP 5 PASSED: 3 agents selected and visible as thumbnails');
 });
 
 
@@ -274,13 +265,13 @@ test('STEP 6: verify send button enabled and navigation', async ({ agentSelectio
   await agentSelection.typeInChatInput('scan wallet');
 
   // Send button should be enabled
-  await agentSelection.verifySendButtonEnabled();
+  await expect(agentSelection.sendButton).toBeEnabled();
 
   // Send message
   await agentSelection.sendChatMessage('scan wallet');
 
   // Verify navigation
-  await agentSelection.verifyNavigatedToChatAgent();
+  await expect(agentSelection.page).toHaveURL(/\/chat-agent\//, { timeout: 10000 });
 
   // Verify URL contains /chat-agent/
   const url = agentSelection.page.url();

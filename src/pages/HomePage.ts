@@ -39,7 +39,7 @@ export class HomePage extends BasePage {
 
     // ---------- Header / texts ----------
     this.logo = page.getByAltText('Walle mascot').first();
-    this.welcomeText = page.getByText('Welcome');
+    this.welcomeText = page.getByTestId('page-title');
     this.createAgentText = page.getByText('Create Your Agent');
     this.exploreAgentsText = page.getByText('EXPLORE AGENTS');
 
@@ -50,21 +50,21 @@ export class HomePage extends BasePage {
     this.deepAnalysisBtn = page.getByText('Deep analysis');
 
     // ---------- Chain selector ----------
-    this.chainDropdownTrigger = page.getByRole('button', { name: 'Select Chain' });
+    this.chainDropdownTrigger = page.getByTestId('chain-dropdown-button');
     this.chainDropdownMenu = page.locator('div.absolute.top-full.left-0');
 
     // ---------- Scan input ----------
-    this.scanInput = page.locator('input[type="text"]');
+    this.scanInput = page.getByTestId('chat-input');
     this.exampleContainer = page.locator('.example-questions-container');
     this.popup = page.locator('.example-popup-container');
 
     // ---------- Wallet ----------
-    this.walletInput = page.getByPlaceholder('Enter a wallet address');
+    this.walletInput = page.getByPlaceholder('Enter wallet address or domain (.eth, .sol, .crypto, etc.)');
     this.searchButton = page.getByRole('button', { name: 'Search' });
     this.inlineError = page.locator('p.text-red-400');
 
     // ---------- Connect wallet ----------
-    this.connectWalletHeaderBtn = page.getByRole('button', { name: 'CONNECT WALLET' });
+    this.connectWalletHeaderBtn = page.getByTestId('main-header-connect-wallet-btn');
     this.connectWalletBtn = page.getByRole('button', { name: 'Connect a Wallet' });
     this.loginWithGoogleBtn = page.getByRole('button', { name: 'Login with google' });
     this.loginWithXBtn = page.getByRole('button', { name: 'Login with x' });
@@ -133,19 +133,19 @@ export class HomePage extends BasePage {
     // HEALER FIX (2025-01-06):
     // Root cause: Click completes but navigation may not finish before assertion
     // Resolution: Wait for navigation URL to change using waitForLoadState which is more lenient
-    await this.page.getByRole('button', { name: 'My Agents' }).click();
+    await this.page.getByTestId('sidebar-nav-item-agents').click();
     await this.page.waitForURL(/\/my-agents/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
   async goToChat() {
     // HEALER FIX (2025-01-06): Wait for navigation to complete
-    await this.page.getByRole('button', { name: 'Chat' }).click();
+    await this.page.getByTestId('sidebar-nav-item-chat').click();
     await this.page.waitForURL(/\/chat/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
   async goToLeaderboard() {
     // HEALER FIX (2025-01-06): Wait for navigation to complete
-    await this.page.getByRole('button', { name: 'Leaderboard' }).click();
+    await this.page.getByTestId('sidebar-nav-item-leaderboard').click();
     await this.page.waitForURL(/\/leaderboard/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
@@ -153,14 +153,14 @@ export class HomePage extends BasePage {
     // HEALER FIX (2025-01-06):
     // Root cause: Dashboard button doesn't navigate to a separate page; it's a no-op when already on home.
     // Resolution: Click without waiting for navigation, as the URL doesn't change.
-    await this.page.getByRole('button', { name: 'Dashboard' }).click();
+    await this.page.getByTestId('sidebar-nav-item-dashboard').click();
     // Allow any pending navigation to complete
-    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch((e) => console.warn('Dashboard navigation timeout (expected if already on home):', e));
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => { });
   }
 
-  
+
   async goHome() {
-    await this.page.getByLabel('Go to home page').click();
+    await this.page.getByTestId('sidebar-logo-btn').click();
   }
 
   // ---------- Connect wallet ----------
@@ -179,7 +179,7 @@ export class HomePage extends BasePage {
   async closeConnectModal() {
     await this.connectModal.close();
   }
-  
+
   async resetState() {
     await this.goto();
     await this.ensureNoModalOpen();
@@ -193,7 +193,7 @@ export class HomePage extends BasePage {
 
   async ensureNoModalOpen() {
     // Close any modal with Escape
-    await this.page.keyboard.press('Escape').catch(() => {});
+    await this.page.keyboard.press('Escape').catch(() => { });
     await expect(this.page.locator('[role="dialog"]')).toBeHidden();
   }
 

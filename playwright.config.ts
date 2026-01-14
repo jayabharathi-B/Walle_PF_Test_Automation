@@ -1,16 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
+// Recreate __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -31,8 +27,8 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.BASE_URL ?? 'https://aistg.walle.xyz/',
-     viewport: { width: 1440, height: 900 },
+    baseURL: process.env.BASE_URL ,
+    viewport: { width: 1440, height: 900 },
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -40,17 +36,11 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    // Setup project - runs authentication before all tests
-
-
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Use authenticated state from setup
-        //storageState: './playwright/.auth/user.json',
       },
-      //dependencies: ['setup'],
     },
 
     // {

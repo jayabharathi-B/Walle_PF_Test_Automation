@@ -27,23 +27,20 @@ export const walletTestCases: WalletTestCase[] = [
     chain: 'Ethereum',
     input: '0x123',
     expectsInlineError: true,
-    expectsSubmitBlocked: true ,
-
+    expectsSubmitBlocked: true,
   },
-{
-  title: 'Solana address with Ethereum selected',
-  chain: 'Ethereum',
-  input: '4Nd1mKk1bCqDqX3z4hN6T6fZP1n7H9mZKX8h2Z',
-  expectsInlineError: true,
-  expectsSubmitBlocked: true,
-},
-{
-  title: 'ETH address with Solana selected',
-  chain: 'Solana',
-  input: '0x8fCb871F786aac849410cD2b068DD252472CdAe9 ',
-  expectsInlineError: true,
-  expectsSubmitBlocked: true,
-},
-
-
+  {
+    title: 'Solana address with Ethereum selected',
+    chain: 'Ethereum',
+    input: '4Nd1mKk1bCqDqX3z4hN6T6fZP1n7H9mZKX8h2Z',
+    expectsInlineError: true,
+    expectsSubmitBlocked: true,
+  },
+  {
+    title: 'ETH address with Solana selected',
+    chain: 'Solana',
+    input: '0x8fCb871F786aac849410cD2b068DD252472CdAe9',
+    expectsInlineError: true,
+    expectsSubmitBlocked: true,
+  },
 ];
