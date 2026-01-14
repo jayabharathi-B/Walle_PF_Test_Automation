@@ -5,18 +5,26 @@ export class AuthenticatedHeader extends BasePage {
   readonly walletAddressButton: Locator;
   readonly walletDropdown: Locator;
   readonly disconnectButton: Locator;
+  readonly creditsButton: Locator;
+  readonly copyAddressButton: Locator;
 
   constructor(page: Page) {
     super(page);
 
     // Wallet address button showing truncated address (e.g., "0x6c0F...52D6")
-    this.walletAddressButton = page.locator('button').filter({ hasText: /0x[a-fA-F0-9]{4}\.\.\.[a-fA-F0-9]{4}/ });
+    this.walletAddressButton = page.getByTestId('main-header-profile-btn');
 
     // Dropdown container that appears after clicking wallet button
-    this.walletDropdown = page.locator('.absolute.right-0.mt-2.w-56.bg-\\[\\#151515\\]');
+    this.walletDropdown = page.getByTestId('main-header-profile-menu');
 
     // Disconnect wallet button in dropdown
-    this.disconnectButton = page.getByText('Disconnect Wallet');
+    this.disconnectButton = page.getByTestId('main-header-profile-disconnect-btn');
+
+    // Credits button in header
+    this.creditsButton = page.getByTestId('credits-button');
+
+    // Copy address button in dropdown
+    this.copyAddressButton = page.getByTestId('main-header-profile-copy-btn');
   }
 
   /**

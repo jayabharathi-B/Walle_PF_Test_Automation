@@ -14,12 +14,12 @@ export class ConnectModal extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.modal = page.locator('.fixed.inset-0');
-    this.connectToContinueText = page.getByRole('heading', { name: 'Connect  to Continue' });
+    this.modal = page.getByTestId('connect-wallet-modal');
+    this.connectToContinueText = page.getByTestId('connect-wallet-modal-title');
     this.connectWalletBtn = page.getByRole('button', { name: 'Connect a Wallet' });
     this.loginWithGoogleBtn = page.getByRole('button', { name: 'Login with google' });
     this.loginWithXBtn = page.getByRole('button', { name: 'Login with x' });
-    this.closeBtn = this.modal.locator('button:has(svg)').first();
+    this.closeBtn = page.getByTestId('connect-wallet-modal-close-btn');
     this.backBtn = page.getByText('Back');
     this.newToWalletsText = page.getByText(/new to wallets\?/i);
   }

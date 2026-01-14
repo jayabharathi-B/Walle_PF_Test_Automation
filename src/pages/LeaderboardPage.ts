@@ -35,7 +35,7 @@ export class LeaderboardPage extends BasePage {
     super(page);
 
     // ---------- Header ----------
-    this.connectWalletBtn = page.getByRole('button', { name: 'CONNECT WALLET' });
+    this.connectWalletBtn = page.getByTestId('main-header-connect-wallet-btn');
 
     // ---------- Bubbles of Fame section ----------
     this.bubblesHeading = page.getByRole('heading', { name: 'BUBBLES OF FAME' });

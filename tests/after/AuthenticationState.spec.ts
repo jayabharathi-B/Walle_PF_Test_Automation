@@ -10,7 +10,10 @@ test.describe('Authentication State - Wallet Button', () => {
 
   test('should display wallet address in header after authentication', async ({ page, authenticatedHeader, home }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for auth state to load and wallet button to appear
+    await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
 
     // Verify wallet button shows truncated address
     const displayedAddress = await authenticatedHeader.getWalletAddress();
@@ -27,7 +30,10 @@ test.describe('Authentication State - Wallet Button', () => {
 
   test('should open dropdown when clicking wallet address button', async ({ page, authenticatedHeader }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for wallet button to be visible
+    await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
 
     // Verify dropdown is not open initially
     expect(await authenticatedHeader.isDropdownOpen()).toBe(false);
@@ -42,7 +48,10 @@ test.describe('Authentication State - Wallet Button', () => {
 
   test('should have disconnect option in dropdown', async ({ page, authenticatedHeader }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for wallet button to be visible
+    await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
 
     // Open dropdown
     await authenticatedHeader.openWalletDropdown();
@@ -57,7 +66,10 @@ test.describe('Authentication State - Wallet Button', () => {
 
   test('should logout when clicking disconnect', async ({ page, authenticatedHeader, home }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for wallet button to be visible
+    await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
 
     // Verify authenticated state before disconnect
     expect(await authenticatedHeader.isAuthenticated()).toBe(true);
@@ -69,7 +81,7 @@ test.describe('Authentication State - Wallet Button', () => {
 
     // Wait for logout to complete - disconnect might trigger async operations
     await page.waitForTimeout(2000); // Wait for disconnect to process
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for wallet button to disappear
     await expect(authenticatedHeader.walletAddressButton).toBeHidden({ timeout: 10000 });
@@ -81,7 +93,10 @@ test.describe('Authentication State - Wallet Button', () => {
 
   test('should close dropdown when clicking outside', async ({ page, authenticatedHeader }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for wallet button to be visible
+    await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
 
     // Open dropdown
     await authenticatedHeader.openWalletDropdown();
@@ -97,14 +112,20 @@ test.describe('Authentication State - Wallet Button', () => {
 
   test('should maintain authenticated state on page reload', async ({ page, authenticatedHeader }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for wallet button to be visible
+    await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
 
     // Verify authenticated initially
     expect(await authenticatedHeader.isAuthenticated()).toBe(true);
     const addressBefore = await authenticatedHeader.getWalletAddress();
 
     // Reload page
-    await page.reload({ waitUntil: 'networkidle' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+
+    // Wait for wallet button to appear again after reload
+    await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
 
     // Verify still authenticated after reload
     expect(await authenticatedHeader.isAuthenticated()).toBe(true);

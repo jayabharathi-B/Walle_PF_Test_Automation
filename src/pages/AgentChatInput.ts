@@ -16,24 +16,9 @@ export class AgentChatInput extends BasePage {
     super(page);
 
     // ---------- Homepage elements ----------
-    // HEALER FIX (2026-01-12): Use partial match for button text
-    // Root cause: Button text changes to "+1 Add Agents", "+2 Add Agents" after agents are selected
-    // Resolution: Match any button containing "Add Agents" text
-    // Intent: Work in both initial state and after agents are added (serial mode)
-    this.addAgentsButton = page.getByRole('button', { name: /Add Agents/i });
-
-
-    // HEALER FIX (2025-01-06):
-    // Root cause: page.getByRole('textbox') matches 2 elements (chat input + wallet input)
-    // Playwright strict mode requires exactly 1 match
-    // Resolution: Use CSS selector to target chat input specifically within agent-chat container
-    // Intent: User typing in the chat input box
-    // TODO: Add data-testid="chat-input" and aria-label="Chat input" to source code
-    this.chatInput = page.locator('input.w-full.bg-transparent.border-none.outline-none').first();
-
-    // TODO: Add data-testid="send-button" and aria-label="Send message" to source code
-    // Current: Button with only image child, no accessible name
-    this.sendButton = page.getByRole('button').filter({ hasText: /^$/ }).nth(1);
+    this.addAgentsButton = page.getByTestId('add-agents-home');
+    this.chatInput = page.getByTestId('chat-input');
+    this.sendButton = page.getByTestId('send-button');
 
     // ---------- Agent thumbnail container ----------
     // TODO: Add data-testid="agent-thumbnail-container" to source code
