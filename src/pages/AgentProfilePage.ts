@@ -4,12 +4,14 @@ import { BasePage } from './BasePage';
 export class AgentProfilePage extends BasePage {
   readonly backBtn: Locator;
   readonly profileName: Locator;
+  readonly chatButton: Locator;
 
   constructor(page: Page) {
     super(page);
 
     this.backBtn = page.getByRole('button').first();
     this.profileName = page.locator('header, main');
+    this.chatButton = page.getByRole('button', { name: /^chat$/i });
   }
 
   async waitForProfile() {
@@ -27,5 +29,10 @@ export class AgentProfilePage extends BasePage {
 
   async goBack() {
     await this.backBtn.click();
+  }
+
+  async clickChatButton() {
+    await this.chatButton.click();
+    await this.page.waitForTimeout(2000);
   }
 }
