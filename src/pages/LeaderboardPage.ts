@@ -236,12 +236,12 @@ export class LeaderboardPage extends BasePage {
    * Click the "CHAT WITH AGENT" button in the detail panel
    */
   async clickChatWithAgent() {
-    // HEALER FIX (2026-01-12): Click then wait for navigation
-    // Root cause: Promise.all expects simultaneous operations, but navigation happens after click
-    // Resolution: Click first, then wait for URL change
-    // Intent: Navigate to chat page after clicking the button
+    // HEALER FIX (2026-01-16): Just click, let test handle outcome expectation
+    // Root cause: Method was waiting for navigation, but before-login shows auth modal
+    // Resolution: Click only - test decides whether to expect modal or navigation
+    // Fast-Track verification: Standard pattern for guarded actions
+    // Terminal verification: npx playwright test tests/before/LeaderboardBubbles.spec.ts:57 → exit code 0 ✅
     await this.chatWithAgentBtn.click();
-    await this.page.waitForURL(/.*chat-agent.*/, { timeout: 15000 });
   }
 
   /**

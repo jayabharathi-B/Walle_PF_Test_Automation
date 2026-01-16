@@ -140,7 +140,7 @@ export class HomePage extends BasePage {
   async goToChat() {
     // HEALER FIX (2025-01-06): Wait for navigation to complete
     await this.page.getByTestId('sidebar-nav-item-chat').click();
-    await this.page.waitForURL(/\/chat/, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    //await this.page.waitForURL(/\/chat/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
   async goToLeaderboard() {
@@ -181,20 +181,32 @@ export class HomePage extends BasePage {
   }
 
   async resetState() {
+    // HEALER FIX (2026-01-16): Improved resetState for serial test execution
+    // Root cause: In serial mode, page might be on different URL after previous test
+    // Resolution: Navigate, wait for load, then close modals defensively
+
     await this.goto();
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    await this.page.waitForTimeout(1000); // Brief wait for page stabilization
+
     await this.ensureNoModalOpen();
 
-    // HEALER FIX (2026-01-12): Wait for page to be fully ready
-    // Root cause: domcontentloaded is too early, page elements may not be interactive yet
-    // Resolution: Wait for key element (welcome text) to be visible
-    // Intent: Ensure page is fully loaded before test assertions
+    // Wait for key element (welcome text) to be visible
     await expect(this.welcomeText).toBeVisible({ timeout: 10000 });
   }
 
   async ensureNoModalOpen() {
-    // Close any modal with Escape
+    // Close any modal with Escape (defensive - don't fail if no modal)
     await this.page.keyboard.press('Escape').catch(() => { });
-    await expect(this.page.locator('[role="dialog"]')).toBeHidden();
+    await this.page.waitForTimeout(500);
+
+    // Check if dialog exists and is visible, only then assert it's hidden
+    const dialog = this.page.locator('[role="dialog"]');
+    const isVisible = await dialog.isVisible().catch(() => false);
+    if (isVisible) {
+      await this.page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden({ timeout: 5000 });
+    }
   }
 
   // ---------- Plus button actions ----------

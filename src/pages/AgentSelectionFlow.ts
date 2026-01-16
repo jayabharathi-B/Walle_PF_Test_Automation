@@ -151,13 +151,17 @@ export class AgentSelectionFlow extends BasePage {
 
   // ---------- State management ----------
   async resetState() {
+    // HEALER FIX (2026-01-16): Improved resetState for serial test execution
+    // Root cause: In serial mode, page might be on different URL after previous test
+    // Resolution: Navigate, wait for load, then close modals defensively
+
     await this.goto();
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    await this.page.waitForTimeout(1000); // Brief wait for page stabilization
+
     await this.ensureNoModalOpen();
 
-    // HEALER FIX (2026-01-12): Wait for page to be fully ready
-    // Root cause: domcontentloaded is too early, page elements may not be interactive yet
-    // Resolution: Wait for key element (Add Agents button) to be visible
-    // Intent: Ensure page is fully loaded before test assertions (regex match works in all states)
+    // Wait for key element (Add Agents button) to be visible
     await this.chatInputComponent.getAddAgentsButton().waitFor({ state: 'visible', timeout: 10000 });
   }
 

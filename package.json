@@ -2,7 +2,17 @@
   "name": "walle",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "node scripts/run-tests.js",
+    "test:before": "playwright test tests/before/ --workers=4",
+    "test:after": "playwright test tests/after/ --workers=1",
+    "test:auth": "playwright test tests/auth/ --workers=1",
+    "test:all": "playwright test --workers=1",
+    "test:no-auth": "playwright test tests/before/ tests/after/ --workers=1",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
