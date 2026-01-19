@@ -69,16 +69,6 @@ export class ChatPage extends BasePage {
     // Issue: Original selector too broad, picks up sidebar buttons
     // Resolution: Try data-testid first, then scope to main content area
     // Priority: 1 (data-testid) or 2 (scoped role-based)
-
-    // Try data-testid pattern first (if exists)
-    const testIdCards = this.page.locator('[data-testid^="session-"], [data-testid^="chat-session-"]');
-
-    // Fallback: Scope to main content, exclude sidebar navigation
-    // Look for buttons with images in the sessions list area (not in nav/header)
-    const scopedCards = this.page.locator('main, [role="main"], .sessions-list, [data-testid*="session"]')
-      .locator('[role="button"]:has(img), button:has(img), a:has(img)')
-      .first(); // Check if scoped locator exists
-
     // Use testIdCards if they exist, otherwise use broader but more specific selector
     return this.page.locator('[data-testid^="session-"], [data-testid^="chat-session-"], main [role="button"]:has(img):not([data-testid*="nav"]):not([data-testid*="sidebar"]):not([data-testid*="header"])');
   }

@@ -204,12 +204,8 @@ export class ExploreAgentsModal extends BasePage {
     // Try regular click first, then force if needed
     try {
       await button.click({ timeout: 5000 });
-    } catch (err: unknown) {
-      try {
-        await button.click({ force: true, timeout: 3000 });
-      } catch (err2: unknown) {
-        throw err2;
-      }
+    } catch {
+      await button.click({ force: true, timeout: 3000 });
     }
 
     // HEALER NOTE: Application requires delay for state transition after selection

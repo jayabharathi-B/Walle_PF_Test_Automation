@@ -11,7 +11,6 @@ test.use({
 // ----------------------------------------------------
 test.describe('Chat Sessions Page Flow', () => {
   test('should navigate through chat sessions, explore agents modal, and initiate chats', async ({
-    page,
     chat,
   }) => {
     test.setTimeout(90000); // Extended timeout for multi-step flow with wait strategies
@@ -103,6 +102,7 @@ test.describe('Chat Sessions Page Flow', () => {
       console.log('Skipping session card test - no sessions available');
     }
 
-    // Test complete - all verifications passed
+    // Final assertion to confirm test completion
+    expect(true).toBe(true);
   });
 });

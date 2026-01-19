@@ -34,7 +34,9 @@ export default [
   globals: {
     process: 'readonly',
     __dirname: 'readonly',
-    console: 'readonly'
+    console: 'readonly',
+    Buffer: 'readonly',
+    fetch: 'readonly'
   }
 },
 

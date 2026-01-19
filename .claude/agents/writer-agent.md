@@ -16,15 +16,46 @@ When Scout provides element analysis:
 ```
 src/
 ├── fixtures/
-│   └── [page].fixture.ts
-└── pages/
-    ├── BasePage.ts
-    └── [Page].ts
+│   └── home.fixture.ts          # Main fixture file with all page fixtures
+├── pages/
+│   ├── BasePage.ts              # Base page class
+│   └── [Page].ts                # Page objects (HomePage, LeaderboardPage, etc.)
+└── utils/
+    └── [utility].ts             # Helper utilities
 
 tests/
-└── pages/
-    └── [Page].spec.ts
+├── before/                      # Unauthenticated tests (no login required)
+│   └── [Feature].spec.ts        # e.g., BeforeLogin.spec.ts, LeaderboardTable.spec.ts
+├── after/                       # Authenticated tests (require login)
+│   ├── auth.setup.ts            # Token refresh setup (runs before authenticated tests)
+│   └── [Feature].spec.ts        # e.g., MyAgentsFlow.spec.ts, ChatSessionsFlow.spec.ts
+├── auth/                        # Authentication setup tests (manual login)
+│   └── google.setup.ts          # Manual Google OAuth login
+└── utils/
+    └── token-refresh.ts         # Token refresh utility
+
+auth/
+└── google.json                  # Storage state with auth tokens (git-ignored)
 ```
+
+### Test Folder Guidelines
+
+**`tests/before/`** - Tests that DON'T require authentication
+- Public pages (landing, leaderboard public view)
+- Connect wallet modal flows
+- Pre-login UI verification
+
+**`tests/after/`** - Tests that REQUIRE authentication
+- My Agents page
+- Chat sessions
+- Credits flow
+- User-specific features
+- **MUST** use `test.use({ storageState: 'auth/google.json' })`
+
+**`tests/auth/`** - Authentication setup (manual intervention)
+- Run with `--headed` flag
+- Uses `page.pause()` for manual Google login
+- Saves tokens to `auth/google.json`
 
 ## Code Patterns (FOLLOW EXACTLY)
 
@@ -297,8 +328,10 @@ readonly connectButton = page.getByRole('button', { name: 'Connect Wallet' });
 ## File Creation Order
 
 1. **Create/Update Page Object** (`src/pages/PageName.ts`)
-2. **Create/Update Fixture** (`src/fixtures/pageName.fixture.ts`)
-3. **Create Test File** (`tests/pages/PageName.spec.ts`)
+2. **Update Main Fixture** (`src/fixtures/home.fixture.ts`) - Add new page to existing fixture
+3. **Create Test File**
+   - Public feature: `tests/before/FeatureName.spec.ts`
+   - Authenticated feature: `tests/after/FeatureName.spec.ts`
 
 ## Integration with Existing Code
 
@@ -478,7 +511,7 @@ When you write code, provide:
 [Full code here]
 ```
 
-#### 3. Test: `tests/pages/ConnectModal.spec.ts`
+#### 3. Test: `tests/before/ConnectModal.spec.ts` (or `tests/after/` if authenticated)
 ```typescript
 [Full code here]
 ```

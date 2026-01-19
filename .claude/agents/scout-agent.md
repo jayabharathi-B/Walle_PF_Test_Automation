@@ -17,6 +17,36 @@ The Scout Agent ONLY:
 
 All fixes are the responsibility of the Healer or Writer agents.
 
+---
+
+## 🔐 CRITICAL: Auth Folder Tests - Use Scouting Script
+
+**When scouting for tests in `tests/auth/` folder:**
+
+The auth folder contains manual authentication setup tests (e.g., `google.setup.ts`). These tests:
+- Require manual login via Google OAuth
+- Use `page.pause()` for manual intervention
+- Save storage state to `auth/google.json`
+
+**For scouting auth-related elements:**
+1. Use the scouting script approach - navigate to the page and use `page.pause()` to inspect
+2. Run in headed mode: `npx playwright test tests/auth/google.setup.ts --headed`
+3. When paused, use browser DevTools to inspect elements
+4. Document locators found for Writer Agent
+
+**Example scouting workflow for auth:**
+```bash
+# Run the auth setup in headed mode to scout
+npx playwright test tests/auth/google.setup.ts --headed --debug
+```
+
+This allows you to:
+- See the actual Google login flow
+- Inspect OAuth redirect pages
+- Document any locators needed for verification
+
+---
+
 
 ## CRITICAL: Before You Start - Get Specific Instructions
 

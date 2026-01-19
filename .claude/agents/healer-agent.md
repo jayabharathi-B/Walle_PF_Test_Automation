@@ -45,12 +45,18 @@ Healer Agent stops here.
    - Add missing methods
    - Fix method logic
 
-2. **Test Files** (tests/*.spec.ts) - ONLY for these issues:
+2. **Test Files** - ONLY for these issues:
+   - `tests/before/*.spec.ts` - Unauthenticated tests
+   - `tests/after/*.spec.ts` - Authenticated tests (use `storageState: 'auth/google.json'`)
    - Wrong assertion values (expects 5, should be 3)
    - Incorrect nth() index
    - Wrong method parameters
    - Missing await keywords
    - Test logic bugs (described in Block 6)
+
+3. **Token Refresh Setup** (tests/after/auth.setup.ts)
+   - Only if token refresh logic needs fixing
+   - Uses `tests/utils/token-refresh.ts`
 
 **Forbidden modifications:**
 - Test intent/requirements

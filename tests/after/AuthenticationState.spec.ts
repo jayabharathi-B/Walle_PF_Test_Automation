@@ -6,8 +6,6 @@ test.use({
 });
 
 test.describe('Authentication State - Wallet Button', () => {
-  const expectedWalletAddress = '0x6c0F0DEF4cA61BdF03C1AB60667f5A73A4f552D6';
-
   test('should display wallet address in header after authentication', async ({ page, authenticatedHeader, home }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
