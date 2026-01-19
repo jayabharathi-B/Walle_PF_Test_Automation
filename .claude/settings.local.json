@@ -41,7 +41,9 @@
       "mcp__playwright__browser_screenshot",
       "mcp__playwright__browser_type",
       "Bash(node -e \"const fs = require\\('fs'\\); const auth = JSON.parse\\(fs.readFileSync\\('auth/google.json', 'utf8'\\)\\); console.log\\(JSON.stringify\\(auth\\)\\);\" > temp_auth.json:*)",
-      "mcp__playwright__browser_wait_for"
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_snapshot",
+      "Bash(echo:*)"
     ]
   }
 }

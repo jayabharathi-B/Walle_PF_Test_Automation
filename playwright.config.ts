@@ -36,8 +36,26 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // Setup project - runs token refresh before authenticated tests
+    {
+      name: 'setup-authenticated-tests',
+      testMatch: /tests\/after\/auth\.setup\.ts/,
+    },
+
+    // Authenticated tests (tests/after/**) - require token refresh
+    {
+      name: 'authenticated-tests',
+      testMatch: /tests\/after\/.*\.spec\.ts/,
+      dependencies: ['setup-authenticated-tests'],
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+
+    // Other tests (tests/before/**, tests/auth/**) - no token refresh needed
     {
       name: 'chromium',
+      testMatch: /tests\/(before|auth)\/.*\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
       },

@@ -9,6 +9,7 @@ import { AgentSelectionFlow } from '../pages/AgentSelectionFlow';
 import { AuthenticatedHeader } from '../pages/AuthenticatedHeader';
 import { CreditsPage } from '../pages/CreditsPage';
 import { PurchaseModal } from '../pages/PurchaseModal';
+import { MyAgentsPage } from '../pages/MyAgentsPage';
 
 type Fixtures = {
   home: HomePage;
@@ -21,6 +22,7 @@ type Fixtures = {
   authenticatedHeader: AuthenticatedHeader;
   creditsPage: CreditsPage;
   purchaseModal: PurchaseModal;
+  myAgents: MyAgentsPage;
 };
 
 export const test = base.extend<Fixtures>({
@@ -52,7 +54,7 @@ export const test = base.extend<Fixtures>({
 
   leaderboard: async ({ page }, use) => {
     const leaderboard = new LeaderboardPage(page);
-    await page.goto('/leaderboard', { waitUntil: 'networkidle' });
+    await page.goto('/leaderboard', { waitUntil: 'domcontentloaded' });
     await use(leaderboard);
   },
 
@@ -75,6 +77,11 @@ export const test = base.extend<Fixtures>({
   purchaseModal: async ({ page }, use) => {
     const purchaseModal = new PurchaseModal(page);
     await use(purchaseModal);
+  },
+
+  myAgents: async ({ page }, use) => {
+    const myAgents = new MyAgentsPage(page);
+    await use(myAgents);
   },
 });
 
