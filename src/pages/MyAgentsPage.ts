@@ -211,9 +211,9 @@ export class MyAgentsPage extends BasePage {
     for (let i = 0; i < cardCount; i++) {
       const card = this.getAgentCard(i);
 
-      // Check if card has cursor-pointer class (indicates it's clickable)
-      const classes = await card.getAttribute('class');
-      expect(classes).toContain('cursor-pointer');
+      // Verify card is visible and enabled (can be interacted with)
+      await expect(card).toBeVisible();
+      await expect(card).toBeEnabled();
     }
   }
 

@@ -19,5 +19,5 @@ setup('Google auth setup', async ({ page }) => {
   // 5. SAVE auth state
   await page.context().storageState({
     path: 'auth/google.json',
-  });
+});
 });

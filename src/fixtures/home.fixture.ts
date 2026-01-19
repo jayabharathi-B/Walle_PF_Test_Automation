@@ -54,7 +54,7 @@ export const test = base.extend<Fixtures>({
 
   leaderboard: async ({ page }, use) => {
     const leaderboard = new LeaderboardPage(page);
-    await page.goto('/leaderboard', { waitUntil: 'networkidle' });
+    await page.goto('/leaderboard', { waitUntil: 'domcontentloaded' });
     await use(leaderboard);
   },
 

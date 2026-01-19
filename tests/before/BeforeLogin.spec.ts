@@ -26,6 +26,15 @@ test('verify connect wallet', async ({ home }) => {
 test('verify homepage content', async ({ home }) => {
   await home.resetState();
   await home.page.reload();
+  // HEALER FIX (2026-01-16): Wait for page content to fully load after reload
+  // Root cause: Third button (Build Defi Strategies) not appearing - page loading incrementally
+  // Resolution: Wait for domcontentloaded + wait for welcome text (indicates page loaded)
+  // Fast-Track verification: More reliable than networkidle for dynamic content
+  await home.page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => {});
+  await expect(home.welcomeText).toBeVisible({ timeout: 15000 });
+  // Give dynamic content time to render
+  await home.page.waitForTimeout(2000);
+
   await expect(home.welcomeText).toBeVisible();
   await expect(home.createAgentText).toBeVisible();
   await expect(home.exploreAgentsText).toBeVisible();
