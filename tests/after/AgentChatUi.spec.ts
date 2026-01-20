@@ -1,4 +1,6 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '../../src/fixtures/home.fixture';
+import type { Locator } from '@playwright/test';
 import { chatPromptList } from '../../src/utils/testData/chatPrompts';
 
 // ----------------------------------------------------
@@ -42,6 +44,17 @@ function isResponseComplete(text: string): boolean {
   }
 
   return true;
+}
+
+async function getLastAgentMessageText(locator: Locator): Promise<string> {
+  let text = '';
+  await expect
+    .poll(async () => {
+      text = (await locator.innerText().catch(() => ''))?.trim() || '';
+      return text.length;
+    }, { timeout: 60000, intervals: [1000, 2000, 3000] })
+    .toBeGreaterThan(0);
+  return text;
 }
 
 test.describe('Agent Chat UI', () => {
@@ -100,6 +113,7 @@ test.describe('Agent Chat UI', () => {
     }
 
     if (creditsInfoValue < 50) {
+      // eslint-disable-next-line playwright/no-skipped-test
       test.skip(true, 'Credits are less than 50 - cannot start chat conversation');
     }
 
@@ -139,9 +153,9 @@ test.describe('Agent Chat UI', () => {
     await page.waitForLoadState('networkidle', { timeout: CHAT_NAV_TIMEOUT_MS }).catch(() => {});
 
     // Verify agent response completed properly (not truncated)
-    const lastAgentResponse = await chat.messageParagraphs.last().textContent();
+    const lastAgentResponse = await getLastAgentMessageText(chat.agentMessageBubbles.last());
     if (!isResponseComplete(lastAgentResponse || '')) {
-      console.error(`[BUG] Agent response truncated: "${lastAgentResponse?.slice(-100)}"`);
+      // eslint-disable-next-line playwright/no-skipped-test
       test.skip(true, `BUG: Agent response was truncated - "${lastAgentResponse?.slice(-50)}"`);
       return;
     }
@@ -178,9 +192,9 @@ test.describe('Agent Chat UI', () => {
     await page.waitForLoadState('networkidle', { timeout: CHAT_NAV_TIMEOUT_MS }).catch(() => {});
 
     // Verify second agent response completed properly (not truncated)
-    const secondAgentResponse = await chat.messageParagraphs.last().textContent();
+    const secondAgentResponse = await getLastAgentMessageText(chat.agentMessageBubbles.last());
     if (!isResponseComplete(secondAgentResponse || '')) {
-      console.error(`[BUG] Agent response truncated: "${secondAgentResponse?.slice(-100)}"`);
+      // eslint-disable-next-line playwright/no-skipped-test
       test.skip(true, `BUG: Agent response was truncated - "${secondAgentResponse?.slice(-50)}"`);
       return;
     }

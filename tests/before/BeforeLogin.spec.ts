@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '../../src/fixtures/home.fixture';
 import { walletTestCases } from '../../src/utils/testData/walletTestData';
 
@@ -38,7 +39,12 @@ test('verify homepage content', async ({ home }) => {
 
   await expect(home.scanBestPerformersBtn).toBeVisible();
   // HEALER FIX (2026-01-16): Force click for animated buttons
-  await home.scanBestPerformersBtn.click({ force: true });
+  try {
+    await home.scanBestPerformersBtn.click({ timeout: 5000 });
+  } catch {
+    // eslint-disable-next-line playwright/no-force-option
+    await home.scanBestPerformersBtn.click({ force: true });
+  }
   await expect(home.scanInput).toHaveValue(
     /scan top 5 tokens by 7d ROI and volume/i
   );
@@ -50,9 +56,13 @@ test('verify homepage content', async ({ home }) => {
   );
 
   await expect(home.buildDefiStrategiesBtn).toBeVisible();
-  // Wait for any animations to complete before clicking
-  await home.page.waitForTimeout(500);
-  await home.buildDefiStrategiesBtn.click({ force: true });
+  await expect(home.buildDefiStrategiesBtn).toBeEnabled();
+  try {
+    await home.buildDefiStrategiesBtn.click({ timeout: 5000 });
+  } catch {
+    // eslint-disable-next-line playwright/no-force-option
+    await home.buildDefiStrategiesBtn.click({ force: true });
+  }
   await expect(home.scanInput).toHaveValue(
     /build a 3-token DeFi strategy with medium risk and stable yield/i
   );
@@ -106,7 +116,14 @@ test('verify navigation bar links', async ({ home }) => {
   // Terminal verification: npx playwright test tests/before/BeforeLogin.spec.ts:77 → exit code 0 ✅
 
   await home.goToChat();
-  await home.page.waitForTimeout(2000);
+  await expect.poll(
+    async () => {
+      const url = home.page.url();
+      const modalVisible = await home.connectToContinueText.isVisible().catch(() => false);
+      return url.includes('/chat') || modalVisible;
+    },
+    { timeout: 10000, intervals: [500, 1000, 1500] }
+  ).toBe(true);
 
   // Check if we navigated OR if modal appeared
   const currentUrl = home.page.url();

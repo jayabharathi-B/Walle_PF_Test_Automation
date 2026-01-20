@@ -15,6 +15,9 @@ export class ChatPage extends BasePage {
   readonly typingIndicatorDots: Locator;
   readonly userMessageBubbles: Locator;
   readonly messageParagraphs: Locator;
+  readonly agentMessageBubbles: Locator;
+  readonly agentMessageParagraphs: Locator;
+  readonly loadingIndicators: Locator;
 
   // ---------- Chat Sessions Page Elements ----------
   readonly pageTitle: Locator;
@@ -40,6 +43,9 @@ export class ChatPage extends BasePage {
     this.typingIndicatorDots = page.locator('div.animate-bounce');
     this.userMessageBubbles = page.locator('div:has(> img[alt="user-avatar"])');
     this.messageParagraphs = page.locator('p');
+    this.agentMessageBubbles = page.locator('div:has(> img[alt]):not(:has(> img[alt="user-avatar"]))');
+    this.agentMessageParagraphs = this.agentMessageBubbles.locator('p');
+    this.loadingIndicators = page.locator('div.animate-bounce, div.animate-pulse, [class*="skeleton"]');
 
     // Chat Sessions page locators
     this.pageTitle = page.locator('[data-testid="page-title"]');
@@ -60,7 +66,14 @@ export class ChatPage extends BasePage {
 
   async clickSuggestionButton() {
     if (await this.suggestionButtons.count()) {
-      await this.suggestionButtons.first().click({ timeout: 2000, force: true });
+      const suggestion = this.suggestionButtons.first();
+      await suggestion.scrollIntoViewIfNeeded();
+      try {
+        await suggestion.click({ timeout: 2000 });
+      } catch {
+        // eslint-disable-next-line playwright/no-force-option
+        await suggestion.click({ timeout: 2000, force: true });
+      }
     }
   }
 
@@ -153,6 +166,14 @@ export class ChatPage extends BasePage {
     // Wait for chat interface to load after agent selection
     await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 
+    return agentName?.trim() || '';
+  }
+
+  async clickExploreAgentByIndex(index: number): Promise<string> {
+    const card = this.getExploreAgentCard(index);
+    const agentName = await card.locator('a, text').first().textContent();
+    await card.click();
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     return agentName?.trim() || '';
   }
 

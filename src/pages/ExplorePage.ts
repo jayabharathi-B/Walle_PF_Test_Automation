@@ -82,7 +82,13 @@ export class ExplorePage extends BasePage {
       .first();
 
     await chatClickTarget.scrollIntoViewIfNeeded();
-    await chatClickTarget.click({ force: true });
+    await chatClickTarget.scrollIntoViewIfNeeded();
+    try {
+      await chatClickTarget.click({ timeout: 5000 });
+    } catch {
+      // eslint-disable-next-line playwright/no-force-option
+      await chatClickTarget.click({ force: true });
+    }
 
     return agentName;
   }

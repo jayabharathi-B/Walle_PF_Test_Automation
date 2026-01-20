@@ -175,6 +175,7 @@ export class ExploreAgentsModal extends BasePage {
     try {
       await this.exploreAddAgentBtn.click();
     } catch {
+      // eslint-disable-next-line playwright/no-force-option
       await this.exploreAddAgentBtn.click({ force: true, timeout: 3000 });
     }
   }
@@ -205,6 +206,7 @@ export class ExploreAgentsModal extends BasePage {
     try {
       await button.click({ timeout: 5000 });
     } catch {
+      // eslint-disable-next-line playwright/no-force-option
       await button.click({ force: true, timeout: 3000 });
     }
 
@@ -230,8 +232,13 @@ export class ExploreAgentsModal extends BasePage {
     const deselectCard = this.exploreDeselectButtons.nth(index);
     await deselectCard.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Click the agent card (may require force click due to overlays)
-    await deselectCard.click({ force: true, timeout: 5000 });
+    await deselectCard.scrollIntoViewIfNeeded();
+    try {
+      await deselectCard.click({ timeout: 5000 });
+    } catch {
+      // eslint-disable-next-line playwright/no-force-option
+      await deselectCard.click({ force: true, timeout: 5000 });
+    }
 
     // Wait for UI state to update - select button should reappear after deselection
     await this.exploreSelectButtons.first().waitFor({ state: 'visible', timeout: 3000 });
@@ -246,6 +253,13 @@ export class ExploreAgentsModal extends BasePage {
     // Root cause: Modal has decorative mask/overlay elements that intercept pointer events
     // Resolution: Use { force: true } to click through the overlay
     // Intent: User clicking tab in Explore modal
-    await this.page.getByRole('button', { name: tabName }).last().click({ force: true });
+    const tabButton = this.page.getByRole('button', { name: tabName }).last();
+    await tabButton.scrollIntoViewIfNeeded();
+    try {
+      await tabButton.click({ timeout: 5000 });
+    } catch {
+      // eslint-disable-next-line playwright/no-force-option
+      await tabButton.click({ force: true });
+    }
   }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '../../src/fixtures/home.fixture';
 
 // Note: storageState is configured in playwright.config.ts for authenticated-tests project
@@ -63,8 +64,6 @@ test.describe('My Agents Page Flow', () => {
     // ----------------------------------------------------
     // STEP 4: Click on first agent name → Profile page
     // ----------------------------------------------------
-    const firstAgentName = await myAgents.getAgentName(0);
-
     await myAgents.clickAgentName(0);
 
     // Verify navigation to profile page
@@ -102,8 +101,6 @@ test.describe('My Agents Page Flow', () => {
     // STEP 8: Click second agent card body (not name) → Chat page
     // This tests clicking anywhere on the card except the name link
     // ----------------------------------------------------
-    const secondAgentName = await myAgents.getAgentName(1);
-
     // Click card body (middle/lower part, not the name link)
     await myAgents.clickAgentCardBody(1);
 

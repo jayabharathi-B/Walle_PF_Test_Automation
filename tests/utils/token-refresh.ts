@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable no-console, complexity, max-lines-per-function */
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';

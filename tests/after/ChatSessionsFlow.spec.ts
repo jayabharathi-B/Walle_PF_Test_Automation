@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '../../src/fixtures/home.fixture';
 
 // Note: storageState is configured in playwright.config.ts for authenticated-tests project
@@ -32,7 +33,9 @@ test.describe('Chat Sessions Page Flow', () => {
     const sessionCount = await chat.getSessionCount();
 
     if (sessionCount > 0) {
+      await expect(chat.getFirstSession()).toBeVisible();
     } else {
+      expect(sessionCount).toBe(0);
     }
 
     // ----------------------------------------------------
@@ -96,6 +99,7 @@ test.describe('Chat Sessions Page Flow', () => {
       await expect(chat.pageTitle).toBeVisible();
       await expect(chat.pageTitle).toHaveText('Chat');
     } else {
+      expect(finalSessionCount).toBe(0);
     }
 
     // Final assertion to confirm test completion

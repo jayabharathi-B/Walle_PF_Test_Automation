@@ -1,10 +1,5 @@
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-// Use authentication storage state from Google login
-test.use({
-  storageState: 'auth/google.json',
-});
-
 // eslint-disable-next-line playwright/no-skipped-test
 test.skip('EG Authentication - Google Login', async ({ page }) => {
   // Navigate to home page

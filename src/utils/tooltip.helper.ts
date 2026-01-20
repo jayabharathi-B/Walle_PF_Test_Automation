@@ -15,7 +15,7 @@ export async function assertTooltip(page: Page, buttonName: string) {
     const tooltipHandle = await tooltip.elementHandle();
     if (tooltipHandle) {
       await page.waitForFunction(
-        (el) => window.getComputedStyle(el).opacity === '0',
+        (el) => el.ownerDocument?.defaultView?.getComputedStyle(el).opacity === '0',
         tooltipHandle
       );
     }

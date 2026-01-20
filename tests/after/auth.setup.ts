@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { test as setup } from '@playwright/test';
 import { refreshAuthTokensViaBrowser } from '../utils/token-refresh';
 

@@ -225,6 +225,10 @@ export class MyAgentsPage extends BasePage {
       const launchedCount = await launchedTag.count();
       const analysedCount = await analysedTag.count();
 
+      if (launchedCount === 0 && analysedCount === 0) {
+        throw new Error('Agent card missing LAUNCHED/ANALYSED tag');
+      }
+
       // Verify the tag that exists is visible
       if (launchedCount > 0) {
         await launchedTag.isVisible();

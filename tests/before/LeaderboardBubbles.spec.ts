@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '../../src/fixtures/home.fixture';
 
 test.describe.configure({ timeout: 90000 });

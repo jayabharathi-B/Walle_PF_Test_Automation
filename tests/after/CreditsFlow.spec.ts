@@ -1,4 +1,9 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '../../src/fixtures/home.fixture';
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // Note: storageState is configured in playwright.config.ts for authenticated-tests project
 
@@ -48,8 +53,7 @@ test.describe('Credits Flow - Complete Journey', () => {
     // ----------------------------------------------------
     await creditsPage.clickRefresh();
 
-    // Wait for balance to refresh
-    await page.waitForTimeout(2000);
+    await creditsPage.balanceValue.waitFor({ state: 'visible', timeout: 5000 });
 
     // Verify balance value is still visible after refresh
     await expect(creditsPage.balanceValue).toBeVisible();
@@ -134,7 +138,7 @@ test.describe('Credits Flow - Complete Journey', () => {
 
     // Click refresh in modal → assert toast
     await purchaseModal.clickRefreshBalance();
-    await page.waitForTimeout(1000); // Wait for refresh
+    await purchaseModal.usdcBalanceValue.waitFor({ state: 'visible', timeout: 5000 });
     // Note: Toast may reappear with same message
 
     // Verify error messages (insufficient balance)
@@ -159,7 +163,7 @@ test.describe('Credits Flow - Complete Journey', () => {
     // - To address field
     // - Amount input field
     // - Transfer button
-    await page.waitForTimeout(1000);
+    await expect(purchaseModal.transferTab).toBeVisible();
 
     // ----------------------------------------------------
     // Step 8: Close Modal
@@ -179,7 +183,8 @@ test.describe('Credits Flow - Complete Journey', () => {
     await home.goHome();
 
     // Verify navigation to home URL
-    await expect(page).toHaveURL(/^https:\/\/aistg\.walle\.xyz\/?$/);
+    const baseUrl = (process.env.BASE_URL || 'https://aistg.walle.xyz').replace(/\/$/, '');
+    await expect(page).toHaveURL(new RegExp(`^${escapeRegExp(baseUrl)}/?$`));
 
     // Verify "Welcome" heading
     await expect(home.welcomeText).toBeVisible();

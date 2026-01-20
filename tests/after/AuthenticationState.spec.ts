@@ -1,11 +1,12 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '../../src/fixtures/home.fixture';
 
 // Note: storageState is configured in playwright.config.ts for authenticated-tests project
 
 test.describe('Authentication State - Wallet Button', () => {
   test('should display wallet address in header after authentication', async ({ page, authenticatedHeader, home }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+    // HEALER FIX (2026-01-20): Avoid default "load" wait which can hang on heavy pages.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Wait for auth state to load and wallet button to appear
     await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
@@ -22,8 +23,8 @@ test.describe('Authentication State - Wallet Button', () => {
   });
 
   test('should open dropdown when clicking wallet address button', async ({ page, authenticatedHeader }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+    // HEALER FIX (2026-01-20): Avoid default "load" wait which can hang on heavy pages.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Wait for wallet button to be visible
     await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
@@ -40,8 +41,8 @@ test.describe('Authentication State - Wallet Button', () => {
   });
 
   test('should have disconnect option in dropdown', async ({ page, authenticatedHeader }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+    // HEALER FIX (2026-01-20): Avoid default "load" wait which can hang on heavy pages.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Wait for wallet button to be visible
     await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
@@ -58,8 +59,8 @@ test.describe('Authentication State - Wallet Button', () => {
   });
 
   test('should logout when clicking disconnect', async ({ page, authenticatedHeader, home }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+    // HEALER FIX (2026-01-20): Avoid default "load" wait which can hang on heavy pages.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Wait for wallet button to be visible
     await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
@@ -72,10 +73,6 @@ test.describe('Authentication State - Wallet Button', () => {
     await authenticatedHeader.openWalletDropdown();
     await authenticatedHeader.clickDisconnect();
 
-    // Wait for logout to complete - disconnect might trigger async operations
-    await page.waitForTimeout(2000); // Wait for disconnect to process
-    await page.waitForLoadState('domcontentloaded');
-
     // Wait for wallet button to disappear
     await expect(authenticatedHeader.walletAddressButton).toBeHidden({ timeout: 10000 });
 
@@ -85,8 +82,8 @@ test.describe('Authentication State - Wallet Button', () => {
   });
 
   test('should close dropdown when clicking outside', async ({ page, authenticatedHeader }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+    // HEALER FIX (2026-01-20): Avoid default "load" wait which can hang on heavy pages.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Wait for wallet button to be visible
     await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
@@ -104,8 +101,8 @@ test.describe('Authentication State - Wallet Button', () => {
   });
 
   test('should maintain authenticated state on page reload', async ({ page, authenticatedHeader }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+    // HEALER FIX (2026-01-20): Avoid default "load" wait which can hang on heavy pages.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Wait for wallet button to be visible
     await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
