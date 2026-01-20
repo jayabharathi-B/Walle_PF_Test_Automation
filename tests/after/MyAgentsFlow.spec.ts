@@ -86,6 +86,7 @@ test.describe('My Agents Page Flow', () => {
 
     // Verify navigation to chat page
     // Note: URL pattern can be /chat or /chat/sess_{uuid}_{session}
+    await page.waitForURL(/\/chat/, { timeout: 15000 });
     expect(page.url()).toContain('/chat');
 
     // ----------------------------------------------------
