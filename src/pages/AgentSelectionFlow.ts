@@ -157,7 +157,6 @@ export class AgentSelectionFlow extends BasePage {
 
     await this.goto();
     await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-    await this.page.waitForTimeout(1000); // Brief wait for page stabilization
 
     await this.ensureNoModalOpen();
 

@@ -8,9 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const STORAGE_STATE_PATH = path.resolve(__dirname, '../../auth/google.json');
-// Use the actual AWS backend endpoint directly (not the Next.js proxy)
-const API_BASE_URL = 'https://80vqjq7bk0.execute-api.us-east-1.amazonaws.com/v1/auth/refresh';
-const ORIGIN = 'https://aistg.walle.xyz';
+// Use environment variables with fallback defaults
+const API_BASE_URL = process.env.AUTH_REFRESH_URL || 'https://80vqjq7bk0.execute-api.us-east-1.amazonaws.com/v1/auth/refresh';
+const ORIGIN = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aistg.walle.xyz';
 
 interface LocalStorageItem {
   name: string;
@@ -99,7 +99,6 @@ async function refreshTokens(refreshToken: string): Promise<RefreshResponse> {
     }
 
     const data: Record<string, unknown> = await response.json();
-    console.log('API Response:', JSON.stringify(data, null, 2));
 
     // Handle nested response format: { data: { access_token, refresh_token } }
     // Also handle flat format: { access_token, refresh_token }
@@ -169,19 +168,13 @@ function updateStorageState(newAccessToken: string, newRefreshToken: string): vo
 export async function refreshAuthTokens(): Promise<void> {
   try {
     // Load current storage state
-    const { refreshToken, accessToken } = loadStorageState();
-    console.log(`Current access token: ${accessToken.substring(0, 20)}...`);
-
+    const { refreshToken } = loadStorageState();
+    console.log('auth refresh (api): using refresh token to request new access token');
     // Call refresh API
-    console.log('Calling token refresh API...');
     const { access_token, refresh_token } = await refreshTokens(refreshToken);
 
     // Update storage state file
-    console.log('Updating storage state with new tokens...');
     updateStorageState(access_token, refresh_token);
-
-    console.log(`New access token: ${access_token.substring(0, 20)}...`);
-    console.log(`Tokens updated successfully at ${new Date().toISOString()}`);
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Token refresh failed: ${error.message}\n\nPlease run the authentication setup manually to re-authenticate.`);
@@ -216,14 +209,12 @@ export async function refreshAuthTokensViaBrowser(browser: Browser): Promise<voi
   try {
     // Load current storage state
     const { refreshToken, accessToken } = loadStorageState();
-    console.log(`Current access token: ${accessToken.substring(0, 20)}...`);
-
     // Check if access token is still valid (with 5 minute buffer)
     if (!isTokenExpired(accessToken, 5)) {
-      console.log('Access token is still valid, skipping refresh');
+      console.log('auth refresh (browser): access token valid, skipping refresh');
       return;
     }
-    console.log('Access token expired or expiring soon, attempting refresh...');
+    console.log('auth refresh (browser): access token expired, using refresh token');
 
     // Create a new context with the existing storage state
     const context = await browser.newContext({
@@ -236,7 +227,6 @@ export async function refreshAuthTokensViaBrowser(browser: Browser): Promise<voi
     await page.goto(ORIGIN, { waitUntil: 'domcontentloaded' });
 
     // Make the refresh API call from within the browser
-    console.log('Calling token refresh API via browser...');
     const response = await page.evaluate(async (refreshTokenValue: string) => {
       const res = await fetch('/api/auth/refresh', {
         method: 'POST',
@@ -254,8 +244,6 @@ export async function refreshAuthTokensViaBrowser(browser: Browser): Promise<voi
       };
     }, refreshToken);
 
-    console.log('API Response:', JSON.stringify(response.data, null, 2));
-
     if (!response.ok) {
       throw new Error(`Token refresh API failed with status ${response.status}: ${JSON.stringify(response.data)}`);
     }
@@ -270,11 +258,7 @@ export async function refreshAuthTokensViaBrowser(browser: Browser): Promise<voi
     }
 
     // Update storage state file
-    console.log('Updating storage state with new tokens...');
     updateStorageState(newAccessToken, newRefreshToken);
-
-    console.log(`New access token: ${newAccessToken.substring(0, 20)}...`);
-    console.log(`Tokens updated successfully at ${new Date().toISOString()}`);
 
     // Clean up
     await context.close();

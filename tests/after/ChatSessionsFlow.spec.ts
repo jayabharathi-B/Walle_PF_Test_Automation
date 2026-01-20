@@ -1,9 +1,6 @@
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-// Use authentication storage state from Google login
-test.use({
-  storageState: 'auth/google.json',
-});
+// Note: storageState is configured in playwright.config.ts for authenticated-tests project
 
 // ----------------------------------------------------
 // Chat Sessions Page - Complete Flow Test
@@ -23,7 +20,8 @@ test.describe('Chat Sessions Page Flow', () => {
     // ----------------------------------------------------
     // STEP 2: Verify Page Title
     // ----------------------------------------------------
-    await chat.verifyPageTitle();
+    await expect(chat.pageTitle).toBeVisible();
+    await expect(chat.pageTitle).toHaveText('Chat');
 
     // ----------------------------------------------------
     // STEP 3: Check Session Cards (Handle Empty State)
@@ -34,9 +32,7 @@ test.describe('Chat Sessions Page Flow', () => {
     const sessionCount = await chat.getSessionCount();
 
     if (sessionCount > 0) {
-      console.log(`Found ${sessionCount} session(s)`);
     } else {
-      console.log('No sessions found - treating as empty state');
     }
 
     // ----------------------------------------------------
@@ -47,20 +43,20 @@ test.describe('Chat Sessions Page Flow', () => {
     // ----------------------------------------------------
     // STEP 5: Verify Explore Modal Opened with 15 Agents
     // ----------------------------------------------------
-    await chat.verifyExploreModalOpened();
-    await chat.verifyExploreAgentCount(15);
+    await expect(chat.exploreModalHeading).toBeVisible();
+    const exploreCount = await chat.getExploreAgentCount();
+    expect(exploreCount).toBe(15);
 
     // ----------------------------------------------------
     // STEP 6: Click Random Agent from Explore Modal
     // ----------------------------------------------------
     const selectedAgentName = await chat.clickRandomExploreAgent();
-    console.log(`Selected agent: ${selectedAgentName}`);
 
     // ----------------------------------------------------
     // STEP 7: Verify Chat Interface Loaded
     // Scout finding: URL stays at /chat (doesn't navigate to /chat/sess_{id})
     // ----------------------------------------------------
-    await chat.verifyChatUrl();
+    await expect(chat.page).toHaveURL(/\/chat/);
 
     // Verify agent name appears in chat
     if (selectedAgentName) {
@@ -75,8 +71,9 @@ test.describe('Chat Sessions Page Flow', () => {
     // ----------------------------------------------------
     // STEP 9: Verify Returned to Chat Sessions Page
     // ----------------------------------------------------
-    await chat.verifyPageTitle();
-    await chat.verifyChatUrl();
+    await expect(chat.pageTitle).toBeVisible();
+    await expect(chat.pageTitle).toHaveText('Chat');
+    await expect(chat.page).toHaveURL(/\/chat/);
 
     // ----------------------------------------------------
     // STEP 10: Test Session Card Click (if sessions exist)
@@ -85,21 +82,20 @@ test.describe('Chat Sessions Page Flow', () => {
     const finalSessionCount = await chat.getSessionCount();
 
     if (finalSessionCount > 0) {
-      console.log(`Testing session click with ${finalSessionCount} session(s)`);
 
       // Click first session card
       await chat.clickSessionCard(0);
 
       // Verify chat interface loaded
-      await chat.verifyChatUrl();
+      await expect(chat.page).toHaveURL(/\/chat/);
 
       // Return to chat sessions via sidebar navigation
       await chat.returnToChatSessionsPage();
 
       // Verify returned successfully
-      await chat.verifyPageTitle();
+      await expect(chat.pageTitle).toBeVisible();
+      await expect(chat.pageTitle).toHaveText('Chat');
     } else {
-      console.log('Skipping session card test - no sessions available');
     }
 
     // Final assertion to confirm test completion

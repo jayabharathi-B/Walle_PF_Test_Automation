@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
 
 export async function assertTooltip(page: Page, buttonName: string) {
   if (page.isClosed()) return;
@@ -8,10 +8,16 @@ export async function assertTooltip(page: Page, buttonName: string) {
   await group.hover();
 
   const tooltip = page.locator('div.pointer-events-none:has-text("' + buttonName + '")');
-  await expect(tooltip).toBeVisible();
+  await tooltip.waitFor({ state: 'visible', timeout: 5000 });
 
   if (!page.isClosed()) {
     await page.mouse.move(0, 0);
-    await expect(tooltip).toHaveCSS('opacity', '0');
+    const tooltipHandle = await tooltip.elementHandle();
+    if (tooltipHandle) {
+      await page.waitForFunction(
+        (el) => window.getComputedStyle(el).opacity === '0',
+        tooltipHandle
+      );
+    }
   }
 }

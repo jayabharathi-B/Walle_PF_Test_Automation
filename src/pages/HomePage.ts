@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { ConnectModal } from './ConnectModal';
 
@@ -106,7 +106,7 @@ export class HomePage extends BasePage {
   async selectChain(chain: string) {
     await this.chainDropdownTrigger.click();
     // HEALER FIX: Added explicit wait before clicking to prevent timeout
-    await expect(this.getChainOption(chain)).toBeVisible({ timeout: 10000 });
+    await this.getChainOption(chain).waitFor({ state: 'visible', timeout: 10000 });
     await this.getChainOption(chain).click();
   }
 
@@ -187,40 +187,37 @@ export class HomePage extends BasePage {
 
     await this.goto();
     await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-    await this.page.waitForTimeout(1000); // Brief wait for page stabilization
 
     await this.ensureNoModalOpen();
 
     // Wait for key element (welcome text) to be visible
-    await expect(this.welcomeText).toBeVisible({ timeout: 10000 });
+    await this.welcomeText.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async ensureNoModalOpen() {
     // Close any modal with Escape (defensive - don't fail if no modal)
-    await this.page.keyboard.press('Escape').catch(() => { });
-    await this.page.waitForTimeout(500);
-
-    // Check if dialog exists and is visible, only then assert it's hidden
     const dialog = this.page.locator('[role="dialog"]');
+
+    // Check if dialog exists and is visible, only then close it
     const isVisible = await dialog.isVisible().catch(() => false);
     if (isVisible) {
       await this.page.keyboard.press('Escape');
-      await expect(dialog).toBeHidden({ timeout: 5000 });
+      await dialog.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
     }
   }
 
   // ---------- Plus button actions ----------
   async clickPlusAndSelect(index: number, optionText: RegExp) {
     await this.clickPlus(index);
-    await expect(this.popup).toBeVisible();
+    await this.popup.waitFor({ state: 'visible', timeout: 5000 });
     await this.popup.getByText(optionText).click();
-    await expect(this.popup).toBeHidden();
+    await this.popup.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- Create agent workflow ----------
   async createAgent(chain: string, walletAddress: string) {
     await this.selectChain(chain);
-    await expect(this.getSelectedChain(chain)).toBeVisible();
+    await this.getSelectedChain(chain).waitFor({ state: 'visible', timeout: 5000 });
     await this.enterWallet(walletAddress);
     await this.clickSearch();
   }

@@ -1,9 +1,6 @@
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-// Use authentication storage state from Google login
-test.use({
-  storageState: 'auth/google.json',
-});
+// Note: storageState is configured in playwright.config.ts for authenticated-tests project
 
 // ----------------------------------------------------
 // My Agents Page - Complete Flow Test
@@ -24,7 +21,7 @@ test.describe('My Agents Page Flow', () => {
     // ----------------------------------------------------
     // STEP 2: Assert page title "My Agents"
     // ----------------------------------------------------
-    await myAgents.verifyPageTitle();
+    await expect(myAgents.pageTitle).toHaveText('My Agents');
 
     // ----------------------------------------------------
     // STEP 3: Verify all agent cards are properly loaded
@@ -36,26 +33,37 @@ test.describe('My Agents Page Flow', () => {
 
     // If no agents exist, skip the rest of the test
     if (cardCount === 0) {
-      console.log('No agents found - skipping agent interaction tests');
       return;
     }
 
     expect(cardCount).toBeGreaterThan(0);
 
-    // Verify all cards are enabled (clickable)
-    await myAgents.verifyAllCardsAreEnabled();
+    for (let i = 0; i < cardCount; i++) {
+      const card = myAgents.getAgentCard(i);
+      const image = myAgents.getAgentImage(card);
+      const launchedTag = myAgents.getLaunchedTag(card);
+      const analysedTag = myAgents.getAnalysedTag(card);
 
-    // Verify all cards have visible images
-    await myAgents.verifyAllCardsHaveImages();
+      await expect(card).toBeVisible();
+      await expect(card).toBeEnabled();
+      await expect(image).toBeVisible();
 
-    // Verify all cards have tags (LAUNCHED or ANALYSED) in top-right corner
-    await myAgents.verifyAllCardsHaveTags();
+      const launchedCount = await launchedTag.count();
+      const analysedCount = await analysedTag.count();
+
+      expect(launchedCount + analysedCount).toBeGreaterThan(0);
+
+      if (launchedCount > 0) {
+        await expect(launchedTag).toBeVisible();
+      } else {
+        await expect(analysedTag).toBeVisible();
+      }
+    }
 
     // ----------------------------------------------------
     // STEP 4: Click on first agent name → Profile page
     // ----------------------------------------------------
     const firstAgentName = await myAgents.getAgentName(0);
-    console.log(`Testing with agent: ${firstAgentName}`);
 
     await myAgents.clickAgentName(0);
 
@@ -87,14 +95,13 @@ test.describe('My Agents Page Flow', () => {
 
     // Verify back on My Agents page
     expect(page.url()).toContain('/my-agents');
-    await myAgents.verifyPageTitle();
+    await expect(myAgents.pageTitle).toHaveText('My Agents');
 
     // ----------------------------------------------------
     // STEP 8: Click second agent card body (not name) → Chat page
     // This tests clicking anywhere on the card except the name link
     // ----------------------------------------------------
     const secondAgentName = await myAgents.getAgentName(1);
-    console.log(`Testing card click with agent: ${secondAgentName}`);
 
     // Click card body (middle/lower part, not the name link)
     await myAgents.clickAgentCardBody(1);

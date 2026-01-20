@@ -1,9 +1,6 @@
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-// Use authentication storage state from Google login
-test.use({
-  storageState: 'auth/google.json',
-});
+// Note: storageState is configured in playwright.config.ts for authenticated-tests project
 
 // ----------------------------------------------------
 // Tests the ENTIRE credits journey in one flow
@@ -31,7 +28,6 @@ test.describe('Credits Flow - Complete Journey', () => {
     const creditsButton = page.getByTestId('credits-button');
     await expect(creditsButton).toBeVisible({ timeout: 15000 });
 
-    console.log('⏳ Waiting for deposit account initialization (30 seconds)...');
     // IMPORTANT: Wait for deposit account to be fully initialized after login
     // Without this wait, clicking "Purchase Credits" will show "Setup a Deposit Account" screen
     //await page.waitForTimeout(30000);
@@ -107,9 +103,6 @@ test.describe('Credits Flow - Complete Journey', () => {
     if (headingText?.includes('Setup')) {
       const createAccountBtn = page.getByRole('button', { name: /create account/i });
       await expect(createAccountBtn).toBeVisible();
-      console.log('🚫 Deposit account requires ThirdWeb - cannot be automated in Playwright');
-      console.log('✅ Test coverage: Navigation, balance, packages, custom amount, order summary, modal detection');
-      console.log('🔴 Not testable: External deposit flow, transfer tab (ThirdWeb integration required)');
       // Test passed with maximum automated coverage given ThirdWeb limitation
       return;
     }
@@ -166,7 +159,6 @@ test.describe('Credits Flow - Complete Journey', () => {
     // - To address field
     // - Amount input field
     // - Transfer button
-    console.log('🔴 Transfer tab: Elements not scouted - skipping assertions');
     await page.waitForTimeout(1000);
 
     // ----------------------------------------------------

@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class PurchaseModal extends BasePage {
@@ -74,24 +74,24 @@ export class PurchaseModal extends BasePage {
 
   // ---------- Modal Actions ----------
   async waitForModal() {
-    await expect(this.modal).toBeVisible({ timeout: 5000 });
+    await this.modal.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async close() {
     await this.closeButton.click();
-    await expect(this.modal).toBeHidden({ timeout: 5000 });
+    await this.modal.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- Tab Actions ----------
   async clickExternalDepositTab() {
     await this.externalDepositTab.click();
-    await expect(this.depositAddressLabel).toBeVisible();
+    await this.depositAddressLabel.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async clickTransferTab() {
     await this.transferTab.click();
-    // TODO: Add proper wait for Transfer tab content after scouting
-    await this.page.waitForTimeout(500);
+    // Wait for tab content transition
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
   }
 
   // ---------- External Deposit Actions ----------

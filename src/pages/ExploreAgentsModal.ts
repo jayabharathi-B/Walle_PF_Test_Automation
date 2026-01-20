@@ -208,11 +208,9 @@ export class ExploreAgentsModal extends BasePage {
       await button.click({ force: true, timeout: 3000 });
     }
 
-    // HEALER NOTE: Application requires delay for state transition after selection
-    // The UI update happens asynchronously and Playwright auto-wait doesn't detect it properly
-    // This is needed for the button state to change from "Select" to "Deselect"
-    // 500ms is required especially when transitioning from Quick Select to Explore modal
-    await this.page.waitForTimeout(500);
+    // Wait for button state transition (Select → Deselect)
+    // The UI updates asynchronously after selection
+    await button.waitFor({ state: 'detached', timeout: 3000 }).catch(() => {});
   }
 
   /**

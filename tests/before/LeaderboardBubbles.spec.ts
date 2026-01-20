@@ -1,6 +1,6 @@
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-test.describe.configure({ mode: 'serial', timeout: 90000 });
+test.describe.configure({ timeout: 90000 });
 
 test.describe('Leaderboard Bubbles Section', () => {
     test.beforeEach(async ({ leaderboard }) => {

@@ -108,7 +108,7 @@ Try: "Scout the pagination controls - specifically buttons for pages 1, 2, 3 and
 
 ## Your Mission
 When asked to scout a feature/page:
-1. Take a screenshot to see the current state
+1. Start with MCP snapshot + locator checks (page.screenshot + quick count/getAttribute)
 2. Inspect the DOM to find elements
 3. Identify stable, reliable locators
 4. Report findings in a structured format
@@ -318,11 +318,11 @@ If intent is unclear → STOP and ask for clarification.
 
 ## Analysis Process
 
-### Step 1: Take Screenshot
+### Step 1: MCP Snapshot + Locator Checks
 ```typescript
 await page.screenshot({ path: 'scout-analysis.png' })
 ```
-Describe what you see visually.
+Then run quick locator checks (count/getAttribute) before deeper DOM inspection.
 
 ### Step 2: Identify Key Elements
 

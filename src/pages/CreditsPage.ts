@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class CreditsPage extends BasePage {
@@ -73,27 +73,27 @@ export class CreditsPage extends BasePage {
   // ---------- Package Selection Actions ----------
   async selectPackage1() {
     await this.package1.click();
-    await expect(this.purchaseCreditsButton).toBeVisible();
+    await this.purchaseCreditsButton.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async selectPackage10() {
     await this.package10.click();
-    await expect(this.purchaseCreditsButton).toBeVisible();
+    await this.purchaseCreditsButton.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async selectPackage20() {
     await this.package20.click();
-    await expect(this.purchaseCreditsButton).toBeVisible();
+    await this.purchaseCreditsButton.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async selectPackage50() {
     await this.package50.click();
-    await expect(this.purchaseCreditsButton).toBeVisible();
+    await this.purchaseCreditsButton.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async enterCustomAmount(amount: string) {
     await this.customAmountInput.fill(amount);
-    await expect(this.purchaseCreditsButton).toBeVisible();
+    await this.purchaseCreditsButton.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   // ---------- Balance Actions ----------
@@ -108,8 +108,8 @@ export class CreditsPage extends BasePage {
 
   // ---------- Helpers ----------
   async waitForPageLoad() {
-    await expect(this.pageHeading).toBeVisible();
-    await expect(this.balanceLabel).toBeVisible();
+    await this.pageHeading.waitFor({ state: 'visible', timeout: 5000 });
+    await this.balanceLabel.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async getBalanceValue(): Promise<string> {
@@ -121,7 +121,7 @@ export class CreditsPage extends BasePage {
   }
 
   async waitForToast() {
-    await expect(this.toast).toBeVisible({ timeout: 5000 });
+    await this.toast.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async getToastMessage(): Promise<string> {

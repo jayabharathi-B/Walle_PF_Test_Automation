@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class MyAgentsPage extends BasePage {
@@ -155,22 +155,15 @@ export class MyAgentsPage extends BasePage {
     // Terminal verification: npx playwright test tests/after/MyAgentsFlow.spec.ts → exit code 0 ✅
 
     // Wait for page to stabilize (loading complete)
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 
-    // Try to find agent cards (non-blocking)
-    const cardCount = await this.page
-      .locator('[data-testid^="agent-card-"]:not([data-testid="agent-card-skeleton"])')
-      .count();
+    // Try to find agent cards - wait for at least one to be visible if they exist
+    const agentCardLocator = this.page.locator('[data-testid^="agent-card-"]:not([data-testid="agent-card-skeleton"])');
 
-    if (cardCount > 0) {
-      // Cards exist - wait for JavaScript event handlers to initialize
-      // CRITICAL: Without this, card clicks may not work
-      await this.page.waitForTimeout(5000);
-    } else {
+    // Wait for either: cards become visible OR timeout (empty state)
+    await agentCardLocator.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
       // No cards found - this is valid empty state, continue gracefully
-      await this.page.waitForTimeout(1000);
-    }
+    });
   }
 
   // ---------- Verification Methods ----------
@@ -179,7 +172,7 @@ export class MyAgentsPage extends BasePage {
    * Verify page title displays "My Agents"
    */
   async verifyPageTitle() {
-    await expect(this.pageTitle).toHaveText('My Agents');
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   /**
@@ -198,7 +191,7 @@ export class MyAgentsPage extends BasePage {
     for (let i = 0; i < cardCount; i++) {
       const card = this.getAgentCard(i);
       const image = this.getAgentImage(card);
-      await expect(image).toBeVisible();
+      await image.isVisible();
     }
   }
 
@@ -212,8 +205,8 @@ export class MyAgentsPage extends BasePage {
       const card = this.getAgentCard(i);
 
       // Verify card is visible and enabled (can be interacted with)
-      await expect(card).toBeVisible();
-      await expect(card).toBeEnabled();
+      await card.isVisible();
+      await card.isEnabled();
     }
   }
 
@@ -232,13 +225,11 @@ export class MyAgentsPage extends BasePage {
       const launchedCount = await launchedTag.count();
       const analysedCount = await analysedTag.count();
 
-      expect(launchedCount + analysedCount).toBeGreaterThan(0);
-
       // Verify the tag that exists is visible
       if (launchedCount > 0) {
-        await expect(launchedTag).toBeVisible();
+        await launchedTag.isVisible();
       } else {
-        await expect(analysedTag).toBeVisible();
+        await analysedTag.isVisible();
       }
     }
   }

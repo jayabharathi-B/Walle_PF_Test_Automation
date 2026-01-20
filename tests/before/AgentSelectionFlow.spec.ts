@@ -1,7 +1,6 @@
 
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-test.describe.configure({ mode: 'serial' });
 
 // ====================================================================
 // STEP 1: Homepage Initial State

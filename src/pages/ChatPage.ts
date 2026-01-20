@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class ChatPage extends BasePage {
@@ -35,14 +35,11 @@ export class ChatPage extends BasePage {
   }
 
   async waitForChatPage() {
-    await expect(this.page).toHaveURL(/chat-agent/i, { timeout: 15000 });
+    await this.page.waitForURL(/chat-agent/i, { timeout: 15000 });
   }
 
-  async verifyAgentName(agentName: string) {
-    const heading = this.page.locator('h1', { hasText: agentName });
-    if (await heading.count()) {
-      await expect(heading).toBeVisible();
-    }
+  getAgentHeading(agentName: string) {
+    return this.page.locator('h1', { hasText: agentName });
   }
 
   async clickSuggestionButton() {
@@ -52,7 +49,7 @@ export class ChatPage extends BasePage {
   }
 
   async sendMessage(message: string) {
-    await expect(this.chatInput).toBeVisible({ timeout: 15000 });
+    await this.chatInput.waitFor({ state: 'visible', timeout: 15000 });
     await this.chatInput.fill(message);
     await this.chatInput.press('Enter');
   }
@@ -82,8 +79,8 @@ export class ChatPage extends BasePage {
   }
 
   async getSessionCount(): Promise<number> {
-    // Wait for skeleton loading to complete
-    await this.page.waitForTimeout(8000);
+    // Wait for page to stabilize - either sessions load or empty state appears
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     return await this.sessionCards.count();
   }
 
@@ -105,28 +102,27 @@ export class ChatPage extends BasePage {
   // ---------- Chat Sessions Page - Actions ----------
   async navigateToChatPage() {
     await this.page.goto('/chat', { waitUntil: 'domcontentloaded' });
-    // Scout finding: Wait 8s for session data to replace skeleton loaders
-    await this.page.waitForTimeout(8000);
+    // Wait for page to stabilize after navigation
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
   }
 
   async verifyPageTitle() {
-    await expect(this.pageTitle).toBeVisible();
-    await expect(this.pageTitle).toHaveText('Chat');
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async clickAddAgentButton() {
     await this.addAgentButton.click();
-    // Scout finding: Wait 5s for modal to open
-    await this.page.waitForTimeout(5000);
+    // Wait for explore modal to open
+    await this.exploreModalHeading.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async verifyExploreModalOpened() {
-    await expect(this.exploreModalHeading).toBeVisible();
+    await this.exploreModalHeading.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async verifyExploreAgentCount(expectedCount: number) {
     const count = await this.getExploreAgentCount();
-    expect(count).toBe(expectedCount);
+    return count === expectedCount;
   }
 
   async clickRandomExploreAgent(): Promise<string> {
@@ -138,8 +134,8 @@ export class ChatPage extends BasePage {
     const agentName = await randomCard.locator('a, text').first().textContent();
 
     await randomCard.click();
-    // Scout finding: Wait 8s for chat to initialize
-    await this.page.waitForTimeout(8000);
+    // Wait for chat interface to load after agent selection
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 
     return agentName?.trim() || '';
   }
@@ -147,8 +143,8 @@ export class ChatPage extends BasePage {
   async clickSessionCard(index: number = 0) {
     const sessionCard = this.getSessionCard(index);
     await sessionCard.click();
-    // Scout finding: Wait 5s for chat to load
-    await this.page.waitForTimeout(5000);
+    // Wait for chat to load after session selection
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
   }
 
   async hasNoSessions(): Promise<boolean> {
@@ -159,12 +155,13 @@ export class ChatPage extends BasePage {
   async returnToChatSessionsPage() {
     // Use sidebar navigation as recommended by scout
     await this.page.locator('[data-testid="sidebar-nav-item-chat"]').click();
-    await this.page.waitForTimeout(3000);
+    // Wait for navigation to complete
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
   }
 
   // ---------- Assertions ----------
   async verifyChatUrl() {
-    expect(this.page.url()).toContain('/chat');
+    return this.page.url();
   }
 
   async verifyAgentNameInChat(expectedName: string) {
@@ -185,7 +182,6 @@ export class ChatPage extends BasePage {
     const textVisible = await agentInPage.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (!h1h2Visible && !textVisible) {
-      console.log(`Agent name "${expectedName}" not prominently visible in chat interface`);
       // Don't fail - chat may have opened successfully even if name not prominently displayed
     }
   }

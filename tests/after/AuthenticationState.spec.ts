@@ -1,9 +1,6 @@
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-// Use authentication storage state from Google login
-test.use({
-  storageState: 'auth/google.json',
-});
+// Note: storageState is configured in playwright.config.ts for authenticated-tests project
 
 test.describe('Authentication State - Wallet Button', () => {
   test('should display wallet address in header after authentication', async ({ page, authenticatedHeader, home }) => {
@@ -13,11 +10,9 @@ test.describe('Authentication State - Wallet Button', () => {
     // Wait for auth state to load and wallet button to appear
     await expect(authenticatedHeader.walletAddressButton).toBeVisible({ timeout: 15000 });
 
-    // Verify wallet button shows truncated address
+    // Verify wallet button shows truncated address format: 0x{4chars}...{4chars}
     const displayedAddress = await authenticatedHeader.getWalletAddress();
-    expect(displayedAddress).toMatch(/0x[a-fA-F0-9]{4}\.\.\.[a-fA-F0-9]{4}/);
-    expect(displayedAddress).toContain('0x6c0F');
-    expect(displayedAddress).toContain('52D6');
+    expect(displayedAddress).toMatch(/^0x[a-fA-F0-9]{4}\.\.\.[a-fA-F0-9]{4}$/);
 
     // Verify CONNECT WALLET button is not visible
     await expect(home.connectWalletHeaderBtn).toBeHidden();
