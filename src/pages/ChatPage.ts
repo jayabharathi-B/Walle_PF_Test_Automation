@@ -5,8 +5,16 @@ export class ChatPage extends BasePage {
   // ---------- Chat Interface Elements ----------
   readonly chatHeading: Locator;
   readonly chatInput: Locator;
+  readonly chatInputTextbox: Locator;
+  readonly chatSendButton: Locator;
+  readonly addAgentsButton: Locator;
   readonly suggestionButtons: Locator;
   readonly backBtn: Locator;
+  readonly creditsInfoText: Locator;
+  readonly outOfCreditsBanner: Locator;
+  readonly typingIndicatorDots: Locator;
+  readonly userMessageBubbles: Locator;
+  readonly messageParagraphs: Locator;
 
   // ---------- Chat Sessions Page Elements ----------
   readonly pageTitle: Locator;
@@ -22,8 +30,16 @@ export class ChatPage extends BasePage {
     // Chat interface locators
     this.chatHeading = page.locator('h1');
     this.chatInput = page.locator('textarea');
+    this.chatInputTextbox = page.getByRole('textbox');
+    this.chatSendButton = page.getByRole('button', { name: 'Send' });
+    this.addAgentsButton = page.getByRole('button', { name: /add agents/i });
     this.suggestionButtons = page.locator('button:has-text("/")');
     this.backBtn = page.getByRole('button', { name: /go\sback/i });
+    this.creditsInfoText = page.getByText(/credits remaining/i);
+    this.outOfCreditsBanner = page.getByText("You've ran out of Credits!");
+    this.typingIndicatorDots = page.locator('div.animate-bounce');
+    this.userMessageBubbles = page.locator('div:has(> img[alt="user-avatar"])');
+    this.messageParagraphs = page.locator('p');
 
     // Chat Sessions page locators
     this.pageTitle = page.locator('[data-testid="page-title"]');
