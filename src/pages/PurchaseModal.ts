@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class PurchaseModal extends BasePage {
@@ -6,6 +6,7 @@ export class PurchaseModal extends BasePage {
   readonly modal: Locator;
   readonly modalHeading: Locator;
   readonly closeButton: Locator;
+  readonly createAccountButton: Locator;
 
   // ---------- Tabs ----------
   readonly externalDepositTab: Locator;
@@ -42,6 +43,7 @@ export class PurchaseModal extends BasePage {
     this.modal = page.getByText(/setup a deposit account|fund your deposit account/i).locator('../..');
     this.modalHeading = page.locator('text=/setup a deposit account|fund your deposit account/i');
     this.closeButton = page.getByTestId('funding-modal-close');
+    this.createAccountButton = page.getByRole('button', { name: /create account/i });
 
     // ---------- Tabs ----------
     this.externalDepositTab = page.getByTestId('external-deposit-tab');
@@ -74,24 +76,29 @@ export class PurchaseModal extends BasePage {
 
   // ---------- Modal Actions ----------
   async waitForModal() {
-    await expect(this.modal).toBeVisible({ timeout: 5000 });
+    await this.modal.waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  async isSetupRequired(): Promise<boolean> {
+    const headingText = await this.modalHeading.textContent();
+    return headingText?.toLowerCase().includes('setup') ?? false;
   }
 
   async close() {
     await this.closeButton.click();
-    await expect(this.modal).toBeHidden({ timeout: 5000 });
+    await this.modal.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- Tab Actions ----------
   async clickExternalDepositTab() {
     await this.externalDepositTab.click();
-    await expect(this.depositAddressLabel).toBeVisible();
+    await this.depositAddressLabel.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async clickTransferTab() {
     await this.transferTab.click();
-    // TODO: Add proper wait for Transfer tab content after scouting
-    await this.page.waitForTimeout(500);
+    // Wait for tab content transition
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
   }
 
   // ---------- External Deposit Actions ----------

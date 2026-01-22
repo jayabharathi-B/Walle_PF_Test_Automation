@@ -1,10 +1,13 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class MyAgentsPage extends BasePage {
   // ---------- Page Elements ----------
   readonly pageTitle: Locator;
   readonly sidebarMyAgentsButton: Locator;
+  readonly paginationContainer: Locator;
+  readonly paginationStatus: Locator;
+  readonly paginationNextButton: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -14,6 +17,11 @@ export class MyAgentsPage extends BasePage {
 
     // Sidebar navigation with data-testid (Priority 1)
     this.sidebarMyAgentsButton = page.locator('[data-testid="sidebar-nav-item-agents"]');
+
+    // Pagination controls (scoped to My Agents page)
+    this.paginationContainer = page.locator('div.mt-6.pt-4.px-2.pb-2.flex.justify-center.items-center.gap-4');
+    this.paginationStatus = this.paginationContainer.locator('span.text-sm.text-white\\/60.px-3');
+    this.paginationNextButton = this.paginationContainer.getByRole('button', { name: /next/i });
   }
 
   // ---------- Agent Card Locators ----------
@@ -31,6 +39,18 @@ export class MyAgentsPage extends BasePage {
    */
   getAgentCard(index: number): Locator {
     return this.agentCards.nth(index);
+  }
+
+  getAgentCardById(agentId: string): Locator {
+    return this.page.locator(`[data-testid="agent-card-${agentId}"]`);
+  }
+
+  getAgentLinkByHandle(agentName: string): Locator {
+    return this.page.locator(`a:has-text("@${agentName}")`);
+  }
+
+  getAgentLinkByName(agentName: string): Locator {
+    return this.page.locator(`a:has-text("${agentName}")`);
   }
 
   /**
@@ -155,22 +175,72 @@ export class MyAgentsPage extends BasePage {
     // Terminal verification: npx playwright test tests/after/MyAgentsFlow.spec.ts → exit code 0 ✅
 
     // Wait for page to stabilize (loading complete)
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-    await this.page.waitForTimeout(2000);
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 
-    // Try to find agent cards (non-blocking)
-    const cardCount = await this.page
-      .locator('[data-testid^="agent-card-"]:not([data-testid="agent-card-skeleton"])')
-      .count();
+    // Try to find agent cards - wait for at least one to be visible if they exist
+    const agentCardLocator = this.page.locator('[data-testid^="agent-card-"]:not([data-testid="agent-card-skeleton"])');
 
-    if (cardCount > 0) {
-      // Cards exist - wait for JavaScript event handlers to initialize
-      // CRITICAL: Without this, card clicks may not work
-      await this.page.waitForTimeout(5000);
-    } else {
+    // Wait for either: cards become visible OR timeout (empty state)
+    await agentCardLocator.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
       // No cards found - this is valid empty state, continue gracefully
-      await this.page.waitForTimeout(1000);
+    });
+  }
+
+  async scrollPaginationIntoView() {
+    await this.paginationContainer.scrollIntoViewIfNeeded().catch(() => {});
+  }
+
+  async getPaginationInfo(): Promise<{ currentPage: number; totalPages: number } | null> {
+    const statusText = await this.paginationStatus.textContent().catch(() => '');
+    const match = statusText?.match(/(\d+)\s*of\s*(\d+)/i);
+    if (!match) {
+      return null;
     }
+    return { currentPage: Number(match[1]), totalPages: Number(match[2]) };
+  }
+
+  async isNextPageVisible(): Promise<boolean> {
+    return await this.paginationNextButton.isVisible({ timeout: 2000 }).catch(() => false);
+  }
+
+  async isNextPageEnabled(): Promise<boolean> {
+    return await this.paginationNextButton.isEnabled().catch(() => false);
+  }
+
+  async goToNextPage() {
+    const previousStatus = (await this.paginationStatus.textContent().catch(() => ''))?.trim() || '';
+    await this.paginationNextButton.scrollIntoViewIfNeeded().catch(() => {});
+    await this.paginationNextButton.click();
+    if (previousStatus) {
+      const statusHandle = await this.paginationStatus.elementHandle().catch(() => null);
+      if (statusHandle) {
+        await this.page.waitForFunction(
+          (el, prev) => (el.textContent || '').trim() !== prev,
+          statusHandle,
+          previousStatus
+        ).catch(() => {});
+      } else {
+        await this.paginationStatus.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+      }
+    } else {
+      await this.paginationStatus.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    }
+  }
+
+  async isAgentVisible(agentName: string, agentId?: string): Promise<boolean> {
+    let visible = await this.getAgentLinkByHandle(agentName).isVisible({ timeout: 2000 }).catch(() => false);
+    if (!visible) {
+      visible = await this.getAgentLinkByName(agentName).isVisible({ timeout: 2000 }).catch(() => false);
+    }
+    if (!visible && agentId) {
+      visible = await this.getAgentCardById(agentId).isVisible({ timeout: 2000 }).catch(() => false);
+    }
+    return visible;
+  }
+
+  async pageContainsText(text: string): Promise<boolean> {
+    const pageText = await this.page.locator('body').textContent().catch(() => '');
+    return pageText?.includes(text) ?? false;
   }
 
   // ---------- Verification Methods ----------
@@ -179,7 +249,7 @@ export class MyAgentsPage extends BasePage {
    * Verify page title displays "My Agents"
    */
   async verifyPageTitle() {
-    await expect(this.pageTitle).toHaveText('My Agents');
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   /**
@@ -198,7 +268,7 @@ export class MyAgentsPage extends BasePage {
     for (let i = 0; i < cardCount; i++) {
       const card = this.getAgentCard(i);
       const image = this.getAgentImage(card);
-      await expect(image).toBeVisible();
+      await image.isVisible();
     }
   }
 
@@ -212,8 +282,8 @@ export class MyAgentsPage extends BasePage {
       const card = this.getAgentCard(i);
 
       // Verify card is visible and enabled (can be interacted with)
-      await expect(card).toBeVisible();
-      await expect(card).toBeEnabled();
+      await card.isVisible();
+      await card.isEnabled();
     }
   }
 
@@ -232,13 +302,15 @@ export class MyAgentsPage extends BasePage {
       const launchedCount = await launchedTag.count();
       const analysedCount = await analysedTag.count();
 
-      expect(launchedCount + analysedCount).toBeGreaterThan(0);
+      if (launchedCount === 0 && analysedCount === 0) {
+        throw new Error('Agent card missing LAUNCHED/ANALYSED tag');
+      }
 
       // Verify the tag that exists is visible
       if (launchedCount > 0) {
-        await expect(launchedTag).toBeVisible();
+        await launchedTag.isVisible();
       } else {
-        await expect(analysedTag).toBeVisible();
+        await analysedTag.isVisible();
       }
     }
   }

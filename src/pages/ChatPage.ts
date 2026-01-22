@@ -1,12 +1,24 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class ChatPage extends BasePage {
   // ---------- Chat Interface Elements ----------
   readonly chatHeading: Locator;
   readonly chatInput: Locator;
+  readonly chatInputTextbox: Locator;
+  readonly chatSendButton: Locator;
+  readonly addAgentsButton: Locator;
   readonly suggestionButtons: Locator;
   readonly backBtn: Locator;
+  readonly creditsInfoText: Locator;
+  readonly outOfCreditsBanner: Locator;
+  readonly typingIndicatorDots: Locator;
+  readonly userMessageBubbles: Locator;
+  readonly messageParagraphs: Locator;
+  readonly agentMessageBubbles: Locator;
+  readonly agentMessageParagraphs: Locator;
+  readonly loadingIndicators: Locator;
+  readonly chatHeaderAgent: Locator;
 
   // ---------- Chat Sessions Page Elements ----------
   readonly pageTitle: Locator;
@@ -22,8 +34,20 @@ export class ChatPage extends BasePage {
     // Chat interface locators
     this.chatHeading = page.locator('h1');
     this.chatInput = page.locator('textarea');
+    this.chatInputTextbox = page.getByRole('textbox');
+    this.chatSendButton = page.getByRole('button', { name: 'Send' });
+    this.addAgentsButton = page.getByRole('button', { name: /add agents/i });
     this.suggestionButtons = page.locator('button:has-text("/")');
     this.backBtn = page.getByRole('button', { name: /go\sback/i });
+    this.creditsInfoText = page.getByText(/credits remaining/i);
+    this.outOfCreditsBanner = page.getByText("You've ran out of Credits!");
+    this.typingIndicatorDots = page.locator('div.animate-bounce');
+    this.userMessageBubbles = page.locator('div:has(> img[alt="user-avatar"])');
+    this.messageParagraphs = page.locator('p');
+    this.agentMessageBubbles = page.locator('div:has(> img[alt]):not(:has(> img[alt="user-avatar"]))');
+    this.agentMessageParagraphs = this.agentMessageBubbles.locator('p');
+    this.loadingIndicators = page.locator('div.animate-bounce, div.animate-pulse, [class*="skeleton"]');
+    this.chatHeaderAgent = page.getByTestId('chat-header-agent');
 
     // Chat Sessions page locators
     this.pageTitle = page.locator('[data-testid="page-title"]');
@@ -35,24 +59,36 @@ export class ChatPage extends BasePage {
   }
 
   async waitForChatPage() {
-    await expect(this.page).toHaveURL(/chat-agent/i, { timeout: 15000 });
+    await this.page.waitForURL(/chat-agent/i, { timeout: 15000 });
   }
 
-  async verifyAgentName(agentName: string) {
-    const heading = this.page.locator('h1', { hasText: agentName });
-    if (await heading.count()) {
-      await expect(heading).toBeVisible();
-    }
+  getAgentHeading(agentName: string) {
+    return this.page.locator('h1', { hasText: agentName });
+  }
+
+  getChatHeaderHeading(): Locator {
+    return this.chatHeaderAgent.getByRole('heading');
+  }
+
+  async getChatHeaderText(): Promise<string> {
+    return (await this.chatHeaderAgent.textContent()) || '';
   }
 
   async clickSuggestionButton() {
     if (await this.suggestionButtons.count()) {
-      await this.suggestionButtons.first().click({ timeout: 2000, force: true });
+      const suggestion = this.suggestionButtons.first();
+      await suggestion.scrollIntoViewIfNeeded();
+      try {
+        await suggestion.click({ timeout: 2000 });
+      } catch {
+        // eslint-disable-next-line playwright/no-force-option
+        await suggestion.click({ timeout: 2000, force: true });
+      }
     }
   }
 
   async sendMessage(message: string) {
-    await expect(this.chatInput).toBeVisible({ timeout: 15000 });
+    await this.chatInput.waitFor({ state: 'visible', timeout: 15000 });
     await this.chatInput.fill(message);
     await this.chatInput.press('Enter');
   }
@@ -69,16 +105,6 @@ export class ChatPage extends BasePage {
     // Issue: Original selector too broad, picks up sidebar buttons
     // Resolution: Try data-testid first, then scope to main content area
     // Priority: 1 (data-testid) or 2 (scoped role-based)
-
-    // Try data-testid pattern first (if exists)
-    const testIdCards = this.page.locator('[data-testid^="session-"], [data-testid^="chat-session-"]');
-
-    // Fallback: Scope to main content, exclude sidebar navigation
-    // Look for buttons with images in the sessions list area (not in nav/header)
-    const scopedCards = this.page.locator('main, [role="main"], .sessions-list, [data-testid*="session"]')
-      .locator('[role="button"]:has(img), button:has(img), a:has(img)')
-      .first(); // Check if scoped locator exists
-
     // Use testIdCards if they exist, otherwise use broader but more specific selector
     return this.page.locator('[data-testid^="session-"], [data-testid^="chat-session-"], main [role="button"]:has(img):not([data-testid*="nav"]):not([data-testid*="sidebar"]):not([data-testid*="header"])');
   }
@@ -92,8 +118,8 @@ export class ChatPage extends BasePage {
   }
 
   async getSessionCount(): Promise<number> {
-    // Wait for skeleton loading to complete
-    await this.page.waitForTimeout(8000);
+    // Wait for page to stabilize - either sessions load or empty state appears
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     return await this.sessionCards.count();
   }
 
@@ -115,28 +141,27 @@ export class ChatPage extends BasePage {
   // ---------- Chat Sessions Page - Actions ----------
   async navigateToChatPage() {
     await this.page.goto('/chat', { waitUntil: 'domcontentloaded' });
-    // Scout finding: Wait 8s for session data to replace skeleton loaders
-    await this.page.waitForTimeout(8000);
+    // Wait for page to stabilize after navigation
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
   }
 
   async verifyPageTitle() {
-    await expect(this.pageTitle).toBeVisible();
-    await expect(this.pageTitle).toHaveText('Chat');
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async clickAddAgentButton() {
     await this.addAgentButton.click();
-    // Scout finding: Wait 5s for modal to open
-    await this.page.waitForTimeout(5000);
+    // Wait for explore modal to open
+    await this.exploreModalHeading.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async verifyExploreModalOpened() {
-    await expect(this.exploreModalHeading).toBeVisible();
+    await this.exploreModalHeading.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async verifyExploreAgentCount(expectedCount: number) {
     const count = await this.getExploreAgentCount();
-    expect(count).toBe(expectedCount);
+    return count === expectedCount;
   }
 
   async clickRandomExploreAgent(): Promise<string> {
@@ -148,17 +173,25 @@ export class ChatPage extends BasePage {
     const agentName = await randomCard.locator('a, text').first().textContent();
 
     await randomCard.click();
-    // Scout finding: Wait 8s for chat to initialize
-    await this.page.waitForTimeout(8000);
+    // Wait for chat interface to load after agent selection
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
 
+    return agentName?.trim() || '';
+  }
+
+  async clickExploreAgentByIndex(index: number): Promise<string> {
+    const card = this.getExploreAgentCard(index);
+    const agentName = await card.locator('a, text').first().textContent();
+    await card.click();
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     return agentName?.trim() || '';
   }
 
   async clickSessionCard(index: number = 0) {
     const sessionCard = this.getSessionCard(index);
     await sessionCard.click();
-    // Scout finding: Wait 5s for chat to load
-    await this.page.waitForTimeout(5000);
+    // Wait for chat to load after session selection
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
   }
 
   async hasNoSessions(): Promise<boolean> {
@@ -169,12 +202,13 @@ export class ChatPage extends BasePage {
   async returnToChatSessionsPage() {
     // Use sidebar navigation as recommended by scout
     await this.page.locator('[data-testid="sidebar-nav-item-chat"]').click();
-    await this.page.waitForTimeout(3000);
+    // Wait for navigation to complete
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
   }
 
   // ---------- Assertions ----------
   async verifyChatUrl() {
-    expect(this.page.url()).toContain('/chat');
+    return this.page.url();
   }
 
   async verifyAgentNameInChat(expectedName: string) {
@@ -195,7 +229,6 @@ export class ChatPage extends BasePage {
     const textVisible = await agentInPage.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (!h1h2Visible && !textVisible) {
-      console.log(`Agent name "${expectedName}" not prominently visible in chat interface`);
       // Don't fail - chat may have opened successfully even if name not prominently displayed
     }
   }

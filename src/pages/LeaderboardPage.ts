@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class LeaderboardPage extends BasePage {
@@ -98,8 +98,8 @@ export class LeaderboardPage extends BasePage {
     // Resolution: Use graceful wait (allow timeout) for loading text, then ensure table is visible.
     // This matches the more robust strategy in waitForBubblesLoaded().
     await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-    await expect(this.leaderboardHeading).toBeVisible({ timeout: 15000 });
-    await expect(this.rankHeader).toBeVisible({ timeout: 15000 });
+    await this.leaderboardHeading.waitFor({ state: 'visible', timeout: 15000 });
+    await this.rankHeader.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   async waitForBubblesLoaded() {
@@ -107,9 +107,9 @@ export class LeaderboardPage extends BasePage {
     // Wait for loading text to be hidden OR just wait for the heading and content to appear.
     // Sometimes "Loading agents..." might not even show up if it's too fast.
     await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => { });
-    await expect(this.bubblesHeading).toBeVisible({ timeout: 15000 });
+    await this.bubblesHeading.waitFor({ state: 'visible', timeout: 15000 });
     // CRITICAL: Ensure at least one bubble is present before proceeding
-    await expect(this.agentBubbles.first()).toBeVisible({ timeout: 15000 });
+    await this.agentBubbles.first().waitFor({ state: 'visible', timeout: 15000 });
   }
 
   // ---------- Table structure accessors (for testing) ----------
@@ -220,7 +220,7 @@ export class LeaderboardPage extends BasePage {
     await this.bubblesHeading.scrollIntoViewIfNeeded();
     await bubble.dispatchEvent('click');
     // Wait for the panel to render and the button to become visible.
-    await expect(this.chatWithAgentBtn).toBeVisible({ timeout: 15000 });
+    await this.chatWithAgentBtn.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   /**
@@ -249,7 +249,7 @@ export class LeaderboardPage extends BasePage {
    */
   async closeAgentPanel() {
     await this.closePanelBtn.click();
-    await expect(this.agentDetailPanel).toBeHidden();
+    await this.agentDetailPanel.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- State management ----------
@@ -267,6 +267,6 @@ export class LeaderboardPage extends BasePage {
   async ensureNoModalOpen() {
     // Close any modal with Escape
     await this.page.keyboard.press('Escape').catch(() => { });
-    await expect(this.page.locator('[role="dialog"]')).toBeHidden();
+    await this.page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5000 });
   }
 }

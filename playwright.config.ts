@@ -49,6 +49,7 @@ export default defineConfig({
       dependencies: ['setup-authenticated-tests'],
       use: {
         ...devices['Desktop Chrome'],
+        storageState: 'auth/google.json',
       },
     },
 

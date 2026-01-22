@@ -1,7 +1,6 @@
 
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-test.describe.configure({ mode: 'serial' });
 
 // ====================================================================
 // STEP 1: Homepage Initial State
@@ -132,7 +131,7 @@ test('STEP 4: verify Explore Agents modal opens and displays tabs', async ({ age
   await expect(agentSelection.topScoreTab).toBeVisible();
 
   // Verify agent cards in gallery
-  const selectButtons = agentSelection.page.getByRole('button', { name: 'Select agent' });
+  const selectButtons = agentSelection.exploreSelectButtons;
   const count = await selectButtons.count();
   expect(count).toBeGreaterThan(0);
 });
@@ -191,7 +190,7 @@ test('STEP 5: verify selecting 2 different agents in Explore', async ({ agentSel
   await agentSelection.selectAgentInExplore(0);
 
   // Verify other agents are still enabled (should have 2 selected, limit is 3)
-  const selectButtons = agentSelection.page.getByRole('button', { name: 'Select agent' });
+  const selectButtons = agentSelection.exploreSelectButtons;
   const enabledCount = await selectButtons.count();
   expect(enabledCount).toBeGreaterThan(0);
 });
@@ -206,13 +205,7 @@ test('STEP 5: verify 3-agent limit disables remaining agents', async ({ agentSel
 
   await agentSelection.openQuickSelectModal();
 
-  const firstAgentName = (
-    await agentSelection.page
-      .locator('p')
-      .filter({ hasText: /^@/ })
-      .first()
-      .textContent()
-  )?.trim();
+  const firstAgentName = await agentSelection.getFirstQuickSelectAgentName();
 
   expect(firstAgentName).toBeTruthy();
 
@@ -290,6 +283,7 @@ test('STEP 6: verify send button enabled and navigation', async ({ agentSelectio
 // Verify deselecting an agent re-enables other agents
 // ----------------------------------------------------
 
+// eslint-disable-next-line playwright/no-skipped-test
 test.skip('EDGE CASE: deselecting agent re-enables others', async ({ agentSelection }) => {
   await agentSelection.resetState();
 
@@ -299,15 +293,24 @@ test.skip('EDGE CASE: deselecting agent re-enables others', async ({ agentSelect
 
   await agentSelection.quickSelectExploreMoreBtn.click();
   await agentSelection.waitForExploreModal();
-  await agentSelection.page.waitForTimeout(1000);
+  await expect.poll(
+    async () => await agentSelection.exploreDeselectButtons.count(),
+    { timeout: 5000, intervals: [500, 1000] }
+  ).toBeGreaterThanOrEqual(2);
   // Select index 0 twice because indices shift after each selection
   // (selected buttons become "Deselect agent" and are excluded from exploreSelectButtons)
   await agentSelection.selectAgentInExplore(0);
-  await agentSelection.page.waitForTimeout(500);
+  await expect.poll(
+    async () => await agentSelection.exploreDeselectButtons.count(),
+    { timeout: 5000, intervals: [500, 1000] }
+  ).toBeGreaterThanOrEqual(3);
   await agentSelection.selectAgentInExplore(0);
 
   // Wait for UI to update after 3rd selection
-  await agentSelection.page.waitForTimeout(500);
+  await expect.poll(
+    async () => await agentSelection.exploreDeselectButtons.count(),
+    { timeout: 5000, intervals: [500, 1000] }
+  ).toBe(3);
 
   // Verify 3 agents are selected in modal (at the limit)
   //const deselectButtonsInModal = await agentSelection.exploreModal.getByRole('button', { name: 'Deselect agent', exact: true }).count();
@@ -317,7 +320,10 @@ test.skip('EDGE CASE: deselecting agent re-enables others', async ({ agentSelect
   await agentSelection.deselectAgentInExplore(0);
 
   // Wait for UI to update after deselection
-  await agentSelection.page.waitForTimeout(500);
+  await expect.poll(
+    async () => await agentSelection.exploreDeselectButtons.count(),
+    { timeout: 5000, intervals: [500, 1000] }
+  ).toBe(2);
 
   // Verify only 2 agents are selected now (down from 3)
   // const deselectButtonsAfter = await agentSelection.exploreModal.getByRole('button', { name: 'Deselect agent', exact: true }).count();

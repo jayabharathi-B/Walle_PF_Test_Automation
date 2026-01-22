@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class AuthenticatedHeader extends BasePage {
@@ -40,7 +40,7 @@ export class AuthenticatedHeader extends BasePage {
    */
   async openWalletDropdown() {
     await this.walletAddressButton.click();
-    await expect(this.walletDropdown).toBeVisible({ timeout: 5000 });
+    await this.walletDropdown.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   /**
@@ -73,6 +73,6 @@ export class AuthenticatedHeader extends BasePage {
   async closeDropdown() {
     // Click on the page body to close dropdown
     await this.page.locator('body').click({ position: { x: 100, y: 100 } });
-    await expect(this.walletDropdown).toBeHidden({ timeout: 5000 });
+    await this.walletDropdown.waitFor({ state: 'hidden', timeout: 5000 });
   }
 }

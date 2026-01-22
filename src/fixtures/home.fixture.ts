@@ -10,6 +10,8 @@ import { AuthenticatedHeader } from '../pages/AuthenticatedHeader';
 import { CreditsPage } from '../pages/CreditsPage';
 import { PurchaseModal } from '../pages/PurchaseModal';
 import { MyAgentsPage } from '../pages/MyAgentsPage';
+import { StrategyBuilderPanel } from '../pages/StrategyBuilderPanel';
+import { AgentCreationFlow } from '../pages/AgentCreationFlow';
 
 type Fixtures = {
   home: HomePage;
@@ -23,6 +25,8 @@ type Fixtures = {
   creditsPage: CreditsPage;
   purchaseModal: PurchaseModal;
   myAgents: MyAgentsPage;
+  strategyBuilder: StrategyBuilderPanel;
+  agentCreation: AgentCreationFlow;
 };
 
 export const test = base.extend<Fixtures>({
@@ -82,6 +86,16 @@ export const test = base.extend<Fixtures>({
   myAgents: async ({ page }, use) => {
     const myAgents = new MyAgentsPage(page);
     await use(myAgents);
+  },
+
+  strategyBuilder: async ({ page }, use) => {
+    const strategyBuilder = new StrategyBuilderPanel(page);
+    await use(strategyBuilder);
+  },
+
+  agentCreation: async ({ page }, use) => {
+    const agentCreation = new AgentCreationFlow(page);
+    await use(agentCreation);
   },
 });
 
