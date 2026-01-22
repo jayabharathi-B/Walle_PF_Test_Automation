@@ -30,7 +30,7 @@ test.describe('Credits Flow - Complete Journey', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Wait for authenticated state to load (credits button or wallet button visible)
-    const creditsButton = page.getByTestId('credits-button');
+    const creditsButton = authenticatedHeader.creditsButton;
     await expect(creditsButton).toBeVisible({ timeout: 15000 });
 
     // IMPORTANT: Wait for deposit account to be fully initialized after login
@@ -103,10 +103,9 @@ test.describe('Credits Flow - Complete Journey', () => {
     await expect(purchaseModal.modalHeading).toBeVisible();
 
     // If "Setup a Deposit Account" appears, ThirdWeb integration is required
-    const headingText = await purchaseModal.modalHeading.textContent();
-    if (headingText?.includes('Setup')) {
-      const createAccountBtn = page.getByRole('button', { name: /create account/i });
-      await expect(createAccountBtn).toBeVisible();
+    const setupRequired = await purchaseModal.isSetupRequired();
+    if (setupRequired) {
+      await expect(purchaseModal.createAccountButton).toBeVisible();
       // Test passed with maximum automated coverage given ThirdWeb limitation
       return;
     }

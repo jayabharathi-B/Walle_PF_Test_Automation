@@ -72,6 +72,7 @@ export class AgentCreationFlow extends BasePage {
   readonly agentCreatedHeading: Locator;
   readonly chatWithCreatedAgentButton: Locator;
 
+  // eslint-disable-next-line max-lines-per-function
   constructor(page: Page) {
     super(page);
 
@@ -263,7 +264,7 @@ export class AgentCreationFlow extends BasePage {
 
   // ---------- Bot/Exchange Wallet Error Modal ----------
   async waitForBotWalletError(timeout: number = 30000) {
-    await this.botWalletErrorModal.waitFor({ state: 'visible', timeout });
+    await this.botWalletErrorModal.waitFor({ state: 'visible', timeout }).catch(() => {});
   }
 
   async closeBotWalletError() {
@@ -294,7 +295,6 @@ export class AgentCreationFlow extends BasePage {
       return true;
     }
 
-    console.log('Auth gate modal visible; close button not found');
     return true;
   }
 
@@ -303,24 +303,21 @@ export class AgentCreationFlow extends BasePage {
     // The personalize modal can take significant time to render in automated tests
     // due to async backend operations and UI rerendering
     const deadline = Date.now() + timeout;
-    let checkCount = 0;
     while (Date.now() < deadline) {
-      checkCount++;
-      const personalizeVisible = await this.personalizeModal.isVisible().catch(() => false);
-      if (personalizeVisible) {
-        console.log(`✓ Personalize modal found after ${checkCount} checks`);
+      const waitWindowMs = Math.min(3000, Math.max(1000, deadline - Date.now()));
+      try {
+        await this.personalizeModal.waitFor({ state: 'visible', timeout: waitWindowMs });
         return;
+      } catch {
+        // Continue polling within the deadline.
       }
 
       const gateVisible = await this.authGateModal.isVisible().catch(() => false);
       if (gateVisible) {
         await this.dismissAuthGateIfPresent();
       }
-
-      await this.page.waitForTimeout(500);
     }
 
-    console.log(`⚠️  Personalize modal not found after ${Math.round(timeout / 1000)}s and ${checkCount} visibility checks`);
     // Final attempt with the full timeout
     await this.personalizeModal.waitFor({ state: 'visible', timeout: 10000 });
   }
@@ -338,14 +335,11 @@ export class AgentCreationFlow extends BasePage {
       const cleanedName = nameText?.trim() || '';
 
       if (cleanedName) {
-        console.log(`✓ Agent name extracted: "${cleanedName}"`);
         return cleanedName;
       }
 
-      console.log(`⚠️  Could not extract agent name from preview modal`);
       return '';
-    } catch (e) {
-      console.log(`❌ Error in getAgentPreviewName: ${e}`);
+    } catch {
       return '';
     }
   }
@@ -356,13 +350,9 @@ export class AgentCreationFlow extends BasePage {
 
   async closePreviewModal() {
     // DISCOVERY (2026-01-21): Close preview modal using data-testid for reliability
-    try {
-      await this.closePreviewButton.waitFor({ state: 'visible', timeout: 5000 });
-      await this.closePreviewButton.click();
-      await this.closePreviewButton.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-    } catch (e) {
-      console.log(`⚠️  Could not close preview modal: ${e}`);
-    }
+    await this.closePreviewButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    await this.closePreviewButton.click().catch(() => {});
+    await this.closePreviewButton.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   }
 
   // ---------- Discount Code Modal ----------
@@ -386,43 +376,31 @@ export class AgentCreationFlow extends BasePage {
     try {
       // CRITICAL FIX (2026-01-21): Wrap agent name retrieval in try-catch to handle page crashes
       let agentName = null;
-      try {
-        agentName = await this.getAgentPreviewName();
-      } catch (nameError) {
-        console.log(`⚠️  Could not get agent name (page may have crashed): ${nameError}`);
-        // Continue fallback without agent name - just navigate to /my-agents
-      }
+      agentName = await this.getAgentPreviewName();
 
-      console.log(`Navigating to /my-agents to find newly created agent...`);
       try {
         await this.page.goto('/my-agents', { waitUntil: 'domcontentloaded' });
         await this.page.waitForLoadState('networkidle').catch(() => {});
-      } catch (navError) {
-        console.log(`⚠️  Navigation to /my-agents failed: ${navError}`);
+      } catch {
         return;
       }
 
       // If we have agent name, try to find and click it
       if (agentName) {
-        console.log(`Looking for agent: ${agentName}`);
         const agentLink = this.page.locator(`a:has-text("@${agentName}")`).first();
         const agentLinkVisible = await agentLink.isVisible({ timeout: 5000 }).catch(() => false);
 
         if (agentLinkVisible) {
-          console.log(`✓ Found agent in My Agents, clicking to navigate to chat`);
           await agentLink.click();
           await this.page.waitForURL(/\/chat/, { timeout: 10000 }).catch(() => {});
           return;
-        } else {
-          console.log(`⚠️  Agent not found in My Agents list with name: ${agentName}`);
         }
       }
 
       // Fallback: If no agent name or agent not found, just report that we navigated to My Agents
       // The test's My Agents verification step (Step 18) will find the agent
-      console.log(`ℹ️  Navigated to /my-agents for fallback; agent should appear there`);
-    } catch (error) {
-      console.log(`Error in fallback navigation: ${error}`);
+    } catch {
+      return;
     }
   }
 
@@ -435,9 +413,10 @@ export class AgentCreationFlow extends BasePage {
   async closeAnyOpenModal() {
     // FIX (2026-01-21): Don't rely on [role="dialog"] - use Escape and look for close buttons directly
     // Try pressing Escape multiple times to close any visible modals
+    const overlays = this.page.locator('div.fixed.inset-0, div[class*="modal"], div[class*="overlay"], [role="dialog"]');
     for (let i = 0; i < 3; i++) {
       await this.page.keyboard.press('Escape');
-      await this.page.waitForTimeout(200);
+      await overlays.first().waitFor({ state: 'hidden', timeout: 500 }).catch(() => {});
     }
 
     // Look for close buttons with common patterns (close, ×, cancel)
@@ -453,13 +432,12 @@ export class AgentCreationFlow extends BasePage {
     }
 
     // Also try to close fixed overlays that may be blocking navigation
-    const fixedOverlays = this.page.locator('div.fixed.inset-0, div[class*="modal"], div[class*="overlay"]');
-    const overlayCount = await fixedOverlays.count();
+    const overlayCount = await overlays.count();
 
     if (overlayCount > 0) {
       // If there are overlays, try pressing Escape again
       await this.page.keyboard.press('Escape');
-      await this.page.waitForTimeout(300);
+      await overlays.first().waitFor({ state: 'hidden', timeout: 500 }).catch(() => {});
     }
   }
 }

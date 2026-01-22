@@ -59,7 +59,8 @@ export class HomePage extends BasePage {
     this.popup = page.locator('.example-popup-container');
 
     // ---------- Wallet ----------
-    this.walletInput = page.getByPlaceholder('Enter wallet address or domain (.eth, .sol, .crypto, etc.)');
+    // HEALER FIX (2026-01-22): Placeholder text changed; use role+name regex for stability
+    this.walletInput = page.getByRole('textbox', { name: /enter wallet address or domain/i });
     this.searchButton = page.getByRole('button', { name: 'Search' });
     this.inlineError = page.locator('p.text-red-400');
 
@@ -128,11 +129,31 @@ export class HomePage extends BasePage {
     return this.searchButton;
   }
 
+  // ---------- Tooltip helpers ----------
+  getNavButton(buttonName: string): Locator {
+    return this.page.getByRole('button', { name: buttonName });
+  }
+
+  getNavTooltip(buttonName: string): Locator {
+    return this.page.locator(`div.pointer-events-none:has-text("${buttonName}")`);
+  }
+
+  async hoverNavButtonGroup(buttonName: string) {
+    const btn = this.getNavButton(buttonName);
+    const group = btn.locator('..');
+    await group.hover();
+  }
+
+  async moveMouseAway() {
+    await this.page.mouse.move(0, 0);
+  }
+
   // ---------- Navbar navigation ----------
   async goToMyAgents() {
     // HEALER FIX (2026-01-21):
     // Root cause: Fixed overlay modal may still be open after agent creation, blocking click
     // Resolution: Use force: true to click through decorative overlay, then wait for navigation
+    // eslint-disable-next-line playwright/no-force-option
     await this.page.getByTestId('sidebar-nav-item-agents').click({ force: true });
     await this.page.waitForURL(/\/my-agents/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }

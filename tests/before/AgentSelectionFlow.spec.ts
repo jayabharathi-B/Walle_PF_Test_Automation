@@ -131,7 +131,7 @@ test('STEP 4: verify Explore Agents modal opens and displays tabs', async ({ age
   await expect(agentSelection.topScoreTab).toBeVisible();
 
   // Verify agent cards in gallery
-  const selectButtons = agentSelection.page.getByRole('button', { name: 'Select agent' });
+  const selectButtons = agentSelection.exploreSelectButtons;
   const count = await selectButtons.count();
   expect(count).toBeGreaterThan(0);
 });
@@ -190,7 +190,7 @@ test('STEP 5: verify selecting 2 different agents in Explore', async ({ agentSel
   await agentSelection.selectAgentInExplore(0);
 
   // Verify other agents are still enabled (should have 2 selected, limit is 3)
-  const selectButtons = agentSelection.page.getByRole('button', { name: 'Select agent' });
+  const selectButtons = agentSelection.exploreSelectButtons;
   const enabledCount = await selectButtons.count();
   expect(enabledCount).toBeGreaterThan(0);
 });
@@ -205,13 +205,7 @@ test('STEP 5: verify 3-agent limit disables remaining agents', async ({ agentSel
 
   await agentSelection.openQuickSelectModal();
 
-  const firstAgentName = (
-    await agentSelection.page
-      .locator('p')
-      .filter({ hasText: /^@/ })
-      .first()
-      .textContent()
-  )?.trim();
+  const firstAgentName = await agentSelection.getFirstQuickSelectAgentName();
 
   expect(firstAgentName).toBeTruthy();
 

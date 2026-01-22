@@ -19,6 +19,7 @@ export class StrategyBuilderPanel extends BasePage {
   readonly backtestContainer: Locator;
   readonly backtestDialogFallback: Locator;
   readonly backtestErrorText: Locator;
+  readonly backtestPanelFallback: Locator;
 
   // ---------- Results UI ----------
   readonly resultsPanel: Locator;
@@ -51,6 +52,7 @@ export class StrategyBuilderPanel extends BasePage {
     this.backtestDialogFallback = page.getByRole('dialog').filter({
       hasText: /backtest|initial amount|timeframe|initial capital/i,
     });
+    this.backtestPanelFallback = page.getByText(/initial amount|initial capital/i);
     this.backtestErrorText = page.getByText(
       /backtest failed|test failed|error running|failed to run|unable to complete/i
     );

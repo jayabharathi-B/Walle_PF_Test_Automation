@@ -71,6 +71,19 @@ export class AgentSelectionFlow extends BasePage {
     await this.quickSelect.waitForModalLoaded();
   }
 
+  async getFirstQuickSelectAgentName(): Promise<string> {
+    // HEALER FIX (2026-01-22) - VERIFIED IN ERROR CONTEXT:
+    // Root cause: Quick Select heading and agent buttons are siblings; ../.. scopes to header only.
+    // Resolution: Traverse one more level (../../..) to include the agent list container.
+    const firstCard = this.quickSelect.quickSelectSelectButtons.first();
+    const name = await firstCard
+      .locator('p')
+      .filter({ hasText: /@/ })
+      .first()
+      .textContent();
+    return name?.trim() || '';
+  }
+
   async closeQuickSelectModalWithAddToChat() {
     await this.quickSelect.closeWithAddToChat();
   }

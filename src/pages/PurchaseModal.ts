@@ -6,6 +6,7 @@ export class PurchaseModal extends BasePage {
   readonly modal: Locator;
   readonly modalHeading: Locator;
   readonly closeButton: Locator;
+  readonly createAccountButton: Locator;
 
   // ---------- Tabs ----------
   readonly externalDepositTab: Locator;
@@ -42,6 +43,7 @@ export class PurchaseModal extends BasePage {
     this.modal = page.getByText(/setup a deposit account|fund your deposit account/i).locator('../..');
     this.modalHeading = page.locator('text=/setup a deposit account|fund your deposit account/i');
     this.closeButton = page.getByTestId('funding-modal-close');
+    this.createAccountButton = page.getByRole('button', { name: /create account/i });
 
     // ---------- Tabs ----------
     this.externalDepositTab = page.getByTestId('external-deposit-tab');
@@ -75,6 +77,11 @@ export class PurchaseModal extends BasePage {
   // ---------- Modal Actions ----------
   async waitForModal() {
     await this.modal.waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  async isSetupRequired(): Promise<boolean> {
+    const headingText = await this.modalHeading.textContent();
+    return headingText?.toLowerCase().includes('setup') ?? false;
   }
 
   async close() {

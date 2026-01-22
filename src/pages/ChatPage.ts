@@ -18,6 +18,7 @@ export class ChatPage extends BasePage {
   readonly agentMessageBubbles: Locator;
   readonly agentMessageParagraphs: Locator;
   readonly loadingIndicators: Locator;
+  readonly chatHeaderAgent: Locator;
 
   // ---------- Chat Sessions Page Elements ----------
   readonly pageTitle: Locator;
@@ -46,6 +47,7 @@ export class ChatPage extends BasePage {
     this.agentMessageBubbles = page.locator('div:has(> img[alt]):not(:has(> img[alt="user-avatar"]))');
     this.agentMessageParagraphs = this.agentMessageBubbles.locator('p');
     this.loadingIndicators = page.locator('div.animate-bounce, div.animate-pulse, [class*="skeleton"]');
+    this.chatHeaderAgent = page.getByTestId('chat-header-agent');
 
     // Chat Sessions page locators
     this.pageTitle = page.locator('[data-testid="page-title"]');
@@ -62,6 +64,14 @@ export class ChatPage extends BasePage {
 
   getAgentHeading(agentName: string) {
     return this.page.locator('h1', { hasText: agentName });
+  }
+
+  getChatHeaderHeading(): Locator {
+    return this.chatHeaderAgent.getByRole('heading');
+  }
+
+  async getChatHeaderText(): Promise<string> {
+    return (await this.chatHeaderAgent.textContent()) || '';
   }
 
   async clickSuggestionButton() {

@@ -1,6 +1,7 @@
-/* eslint-disable max-lines-per-function */
+/* eslint-disable max-lines-per-function, playwright/no-skipped-test, complexity */
 import { test, expect } from '../../src/fixtures/home.fixture';
 import { readFileSync } from 'fs';
+import { URL } from 'url';
 import {
   botWalletAddresses,
   getRandomUnusedWalletAddress,
@@ -22,14 +23,7 @@ async function captureStep(
   stepName: string,
   assertion: () => Promise<void>
 ): Promise<void> {
-  console.log(`\n📍 STEP ${stepNumber}: ${stepName}`);
-  try {
-    await assertion();
-    console.log(`✅ STEP ${stepNumber} COMPLETED: ${stepName}\n`);
-  } catch (error) {
-    console.log(`❌ STEP ${stepNumber} FAILED: ${stepName}`);
-    throw error;
-  }
+  await assertion();
 }
 
 // ----------------------------------------------------
@@ -41,9 +35,6 @@ test.describe('Agent Creation Flow', () => {
   // Store created agent details for later verification
   let createdAgentName: string = '';
   let createdAgentId: string = '';
-  let createdAgentUrl: string = '';
-  let selectedWalletAddress: string = '';
-  let selectedChain: string = '';
 
  
   // ----------------------------------------------------
@@ -51,20 +42,17 @@ test.describe('Agent Creation Flow', () => {
     page,
     home,
     agentCreation,
+    chat,
+    myAgents,
   }) => {
     test.setTimeout(AGENT_CREATION_TIMEOUT_MS);
 
     const { chain, address: walletAddress } = getRandomUnusedWalletAddress();
-    selectedChain = chain;
-    selectedWalletAddress = walletAddress;
 
     // STEP 1: Navigate to Homepage
     await captureStep(1, 'Navigate to Homepage', async () => {
       await home.goto();
       await expect(home.createAgentText).toBeVisible({ timeout: NAV_TIMEOUT_MS });
-      console.log(`📝 Test Configuration:`);
-      console.log(`   - Selected Chain: ${selectedChain.toUpperCase()}`);
-      console.log(`   - Selected Wallet: ${selectedWalletAddress}`);
     });
 
     // STEP 2: Select Chain
@@ -78,7 +66,6 @@ test.describe('Agent Creation Flow', () => {
       await agentCreation.enterWalletAddress(walletAddress);
       await expect(agentCreation.walletAddressInput).toHaveValue(walletAddress);
       await expect(agentCreation.searchButton).toBeEnabled();
-      console.log(`✓ Wallet address entered: ${walletAddress}`);
     });
 
     // STEP 4: Trigger Agent Genesis Modal
@@ -98,19 +85,15 @@ test.describe('Agent Creation Flow', () => {
         .catch(() => false);
 
       if (agentExistsVisible) {
-        console.log(`⚠️  Agent already exists for wallet: ${walletAddress}`);
         markWalletAddressAsUsed(walletAddress);
         test.skip();
         return;
       }
-      console.log('✓ No existing agent');
     });
 
     // STEP 7: Wait for Scanning Steps to Completeg
     await captureStep(7, 'Wait for Scanning Steps to Complete', async () => {
       await agentCreation.waitForScanningToComplete(CHAT_RESPONSE_TIMEOUT_MS);
-      // HEALER FIX (2026-01-21): Modal appears after step 6 completes, add brief wait for transition
-      await page.waitForTimeout(1000);
     });
 
 
@@ -128,12 +111,10 @@ test.describe('Agent Creation Flow', () => {
         .catch(() => false);
 
       if (agentExistsVisible) {
-        console.log(`⚠️  Agent already exists for wallet: ${walletAddress}`);
         markWalletAddressAsUsed(walletAddress);
         test.skip();
         return;
       }
-      console.log('✓ No existing agent modal');
     });
       await expect(agentCreation.maleGenderButton).toBeVisible();
       await expect(agentCreation.femaleGenderButton).toBeVisible();
@@ -149,11 +130,7 @@ test.describe('Agent Creation Flow', () => {
         .catch(() => false);
 
       if (authGateVisible) {
-        console.log('⚠️  Auth gate modal detected, closing it...');
         await agentCreation.dismissAuthGateIfPresent();
-        console.log('✓ Auth gate dismissed, continuing with personalization');
-      } else {
-        console.log('✓ No auth gate modal, proceeding normally');
       }
     });
 
@@ -179,10 +156,6 @@ test.describe('Agent Creation Flow', () => {
     // File location: src/utils/testData/usedWalletAddresses.json
     await captureStep(10.5, 'Mark Wallet as Used (Immediately After Style Confirmation)', async () => {
       markWalletAddressAsUsed(walletAddress);
-      console.log(`✅ Wallet RESERVED and marked as used: ${walletAddress}`);
-      console.log(`✅ Saved to: src/utils/testData/usedWalletAddresses.json`);
-      console.log(`✅ Wallet locked for this chain: ${selectedChain.toUpperCase()}`);
-      console.log(`⏳ Proceeding with agent creation...`);
     });
     
         // STEP 5: Check for Bot Wallet Error Modal
@@ -193,11 +166,9 @@ test.describe('Agent Creation Flow', () => {
 
       if (botWalletErrorVisible) {
         await agentCreation.closeBotWalletError();
-        console.log(`⚠️  Bot/exchange wallet detected: ${walletAddress}`);
         test.skip();
         return;
       }
-      console.log('✓ No bot wallet error');
     });
 
     // STEP 11: Wait for Agent Preview Modal (MUST appear after style confirmation)
@@ -209,18 +180,13 @@ test.describe('Agent Creation Flow', () => {
       await expect(agentCreation.agentPreviewImage).toBeVisible();
       createdAgentName = await agentCreation.getAgentPreviewName();
       expect(createdAgentName).toBeTruthy();
-      console.log(`✓ Agent preview loaded: ${createdAgentName}`);
 
-      // Capture agent ID from URL or page state
-      const currentUrl = page.url();
-      console.log(`✓ Current page URL: ${currentUrl}`);
     });
 
     // STEP 12: Launch Agent (from preview modal)
     await captureStep(12, 'Click Launch Agent Button in Preview', async () => {
       await expect(agentCreation.launchAgentButton).toBeVisible();
       await agentCreation.launchAgent();
-      console.log('✓ Clicked launch button');
     });
 
     // STEP 13: Handle Optional Discount Modal
@@ -233,9 +199,6 @@ test.describe('Agent Creation Flow', () => {
         // const discountValue = await agentCreation.discountCodeInput.inputValue();
         // expect(discountValue).toBeTruthy();
         await agentCreation.launchWithDiscount();
-        console.log('✓ Discount code applied');
-      } else {
-        console.log('✓ No discount modal');
       }
     });
 
@@ -243,49 +206,27 @@ test.describe('Agent Creation Flow', () => {
     // STEP 15: Click Chat with Agent Button and Wait for Navigation
    
     await captureStep(15, 'Click Chat with Agent Button and Wait for Navigation', async () => {
-      const initialUrl = page.url();
-      console.log(`Starting URL: ${initialUrl}`);
       await expect(agentCreation.agentCreatedModal).toBeVisible({ timeout: 30000 });
       await expect(agentCreation.agentCreatedHeading).toBeVisible({ timeout: 30000 });
 
       // Call the improved clickChatWithNewAgent which handles multiple scenarios
       await expect(agentCreation.chatWithCreatedAgentButton).toBeVisible();
       await agentCreation.chatWithCreatedAgentButton.click();
-
-      console.log('✓ Button click completed, navigation should be in progress...');
-
       // Wait for navigation to complete - support both /chat/ and /chat-agent/ routes
       // The frontend navigates asynchronously after button click
-      try {
-        await page.waitForURL(/\/(chat|chat-agent)\//, { timeout: CHAT_RESPONSE_TIMEOUT_MS });
-        const chatUrl = page.url();
-        console.log(`✓ Successfully navigated to chat URL: ${chatUrl}`);
-      } catch (e) {
-        const currentUrl = page.url();
-        console.log(`⚠️  Navigation timeout or incomplete, current URL: ${currentUrl}`);
-
-        if (!currentUrl.includes('/chat')) {
-          console.log('⚠️  Still not on chat page, there may be a blocking modal or issue');
-        }
-      }
+      await page.waitForURL(/\/(chat|chat-agent)\//, { timeout: CHAT_RESPONSE_TIMEOUT_MS }).catch(() => {});
     });
 
     // STEP 16: Verify Chat Page Navigation
     // CRITICAL FIX (2026-01-21): Navigation happens in Step 15, just verify we're on chat page
     await captureStep(16, 'Verify Chat Page Navigation', async () => {
       const finalUrl = page.url();
-      console.log(`✓ Final URL: ${finalUrl}`);
 
-      if (!finalUrl.includes('/chat/sess_')) {
-        console.log('⚠️  Not on chat page, checking if agent was created on homepage instead');
-      } else {
+      if (finalUrl.includes('/chat/sess_')) {
         // Extract agent ID from chat URL (format: /chat/sess_<agent-id>_<session-id>)
         const agentIdMatch = finalUrl.match(/sess_([a-f0-9-]+)_/);
         if (agentIdMatch) {
           createdAgentId = agentIdMatch[1];
-          createdAgentUrl = `https://aistg.walle.xyz/chat/${finalUrl.split('/chat/')[1]}`;
-          console.log(`✓ Agent ID: ${createdAgentId}`);
-          console.log(`✓ Chat Session URL: ${createdAgentUrl}`);
         }
       }
     });
@@ -297,30 +238,19 @@ test.describe('Agent Creation Flow', () => {
 
       if (currentUrl.includes('/chat/sess_')) {
         // We're on the chat page, verify agent details
-        console.log(`Info: On chat page: ${currentUrl}`);
-        await page.waitForTimeout(1000);
-
         // Verify agent name is displayed in chat (heading or fallback container)
-        const chatHeader = page.getByTestId('chat-header-agent');
-        const agentNameHeading = chatHeader.getByRole('heading');
+        const chatHeader = chat.chatHeaderAgent;
+        const agentNameHeading = chat.getChatHeaderHeading();
         const headingVisible = await agentNameHeading.isVisible({ timeout: 5000 }).catch(() => false);
         const headerVisible = headingVisible
           ? true
           : await chatHeader.isVisible({ timeout: 5000 }).catch(() => false);
 
         if (headingVisible) {
-          const nameText = await agentNameHeading.textContent();
-          console.log(`Info: Agent name in chat header: ${nameText}`);
-          console.log(`Info: Agent name verified in chat: ${createdAgentName}`);
+          await agentNameHeading.textContent();
         } else if (headerVisible) {
-          const nameText = await chatHeader.textContent();
-          console.log(`Info: Chat header visible; text: ${nameText?.trim() || ''}`);
-          console.log('Info: Agent header visible, heading not found');
-        } else {
-          console.log('Warn: Agent header not found in chat, but navigation successful');
+          await chatHeader.textContent();
         }
-      } else {
-        console.log(`Warn: Not on chat page (URL: ${currentUrl}), agent was created but navigation incomplete`);
       }
     });
 
@@ -328,89 +258,50 @@ test.describe('Agent Creation Flow', () => {
     // VERIFIED (2026-01-21): Agent appears in My Agents list with LAUNCHED badge
     await captureStep(18, 'Verify Agent in My Agents Page', async () => {
       // Navigate to My Agents page
-      await page.goto('/my-agents', { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle', { timeout: NAV_TIMEOUT_MS });
+      await myAgents.navigateToMyAgents();
+      await myAgents.scrollPaginationIntoView();
 
-      const paginationContainer = page.locator('div.mt-6.pt-4.px-2.pb-2.flex.justify-center.items-center.gap-4');
-      const nxtButton = paginationContainer.getByRole('button', { name: /next/i });
-      const paginationStatus = paginationContainer.locator('span.text-sm.text-white\\/60.px-3');
-      await paginationContainer.scrollIntoViewIfNeeded().catch(() => {});
-
-      const maxPagesText = await paginationStatus.textContent().catch(() => '');
-      const maxPagesMatch = maxPagesText?.match(/\d+\s*of\s+(\d+)/i);
-      const maxPages = maxPagesMatch ? Number(maxPagesMatch[1]) : 10;
+      const paginationInfo = await myAgents.getPaginationInfo();
+      const maxPages = paginationInfo?.totalPages ?? 10;
       let agentVisible = false;
 
       for (let pageIndex = 0; pageIndex < maxPages; pageIndex += 1) {
         // Search for the agent in the list on the current page
-        const agentLink = page.locator(`a:has-text("@${createdAgentName}")`);
-        const agentLinkNoAt = page.locator(`a:has-text("${createdAgentName}")`);
-        const agentCardById = createdAgentId
-          ? page.locator(`[data-testid="agent-card-${createdAgentId}"]`)
-          : page.locator('nonexistent');
-
-        agentVisible = await agentLink.isVisible({ timeout: 2000 }).catch(() => false);
-        if (!agentVisible) {
-          agentVisible = await agentLinkNoAt.isVisible({ timeout: 2000 }).catch(() => false);
-        }
-        if (!agentVisible && createdAgentId) {
-          agentVisible = await agentCardById.isVisible({ timeout: 2000 }).catch(() => false);
-        }
+        agentVisible = await myAgents.isAgentVisible(createdAgentName, createdAgentId || undefined);
 
         if (agentVisible) {
-          console.log(`ƒo" Agent found on page ${pageIndex + 1}`);
           break;
         }
 
-        const paginationText = await paginationStatus.textContent().catch(() => '');
-        const paginationMatch = paginationText?.match(/(\d+)\s*of\s*(\d+)/i);
-        if (paginationMatch) {
-          const currentPage = Number(paginationMatch[1]);
-          const totalPages = Number(paginationMatch[2]);
-          if (currentPage >= totalPages) {
-            console.log(`Reached last page (${currentPage} of ${totalPages}); stopping pagination`);
-            break;
-          }
+        const currentPageInfo = await myAgents.getPaginationInfo();
+        if (currentPageInfo && currentPageInfo.currentPage >= currentPageInfo.totalPages) {
+          break;
         }
 
-        const nextVisible = await nxtButton.isVisible({ timeout: 2000 }).catch(() => false);
+        const nextVisible = await myAgents.isNextPageVisible();
         if (!nextVisible) {
-          console.log(`ƒsÿ‹,?  Next button not visible; stopping pagination on page ${pageIndex + 1}`);
           break;
         }
 
-        const nextEnabled = await nxtButton.isEnabled().catch(() => false);
+        const nextEnabled = await myAgents.isNextPageEnabled();
         if (!nextEnabled) {
-          console.log(`ƒsÿ‹,?  Next button disabled; reached last page at ${pageIndex + 1}`);
           break;
         }
 
-        console.log(`ƒo" Agent not on page ${pageIndex + 1}, clicking Next...`);
-        await nxtButton.scrollIntoViewIfNeeded().catch(() => {});
-        await nxtButton.click();
-        await page.waitForLoadState('networkidle', { timeout: NAV_TIMEOUT_MS }).catch(() => {});
-        await page.waitForTimeout(500);
+        await myAgents.goToNextPage();
       }
 
       if (agentVisible) {
-        console.log(`✓ Agent found in My Agents page: ${createdAgentName}`);
 
         // Verify LAUNCHED tag
-        const agentCard = page.locator(`[data-testid="agent-card-${createdAgentId}"]`);
-        const launchedBadge = agentCard.locator('text=LAUNCHED');
+        const agentCard = myAgents.getAgentCardById(createdAgentId);
+        const launchedBadge = myAgents.getLaunchedTag(agentCard);
 
         try {
           await expect(launchedBadge).toBeVisible({ timeout: 5000 });
-          console.log(`✓ LAUNCHED badge verified for agent: ${createdAgentName}`);
         } catch {
-          console.log(`⚠️  LAUNCHED badge not immediately visible, checking page state`);
-          const pageText = await page.locator('body').textContent();
-          if (pageText?.includes('LAUNCHED')) {
-            console.log(`✓ LAUNCHED status found on page`);
-          }
+          await myAgents.pageContainsText('LAUNCHED');
         }
-      } else {
-        console.log(`⚠️  Agent not found after checking My Agents pages`);
       }
     });
 
@@ -418,31 +309,10 @@ test.describe('Agent Creation Flow', () => {
     // DYNAMIC (2026-01-21): Complete end-to-end flow with all verifications
     // Wallet automatically marked as used in STEP 10.5 and saved to usedWalletAddresses.json
     await captureStep(19, '(COMPLETE) Agent Creation Flow Successfully Verified', async () => {
-      console.log('\n✅ ===== AGENT CREATION FLOW COMPLETED SUCCESSFULLY =====');
-      console.log('\n📊 AGENT DETAILS (Auto-Generated):');
-      console.log(`   ✅ Agent Name: ${createdAgentName}`);
-      console.log(`   ✅ Agent ID: ${createdAgentId}`);
-      console.log(`   ✅ Chat URL: ${createdAgentUrl}`);
 
-      console.log('\n📋 WALLET CONFIGURATION (Dynamic):');
-      console.log(`   ✅ Wallet Address: ${selectedWalletAddress}`);
-      console.log(`   ✅ Chain: ${selectedChain.toUpperCase()}`);
-      console.log(`   ✅ Wallet Status: MARKED AS USED ✓ (saved to usedWalletAddresses.json)`);
 
-      console.log('\n👤 PERSONALIZATION (Fixed):');
-      console.log('   ✅ Gender: Male');
-      console.log('   ✅ Avatar Style: Photorealistic');
 
-      console.log('\n🚀 DEPLOYMENT STATUS:');
-      console.log('   ✅ Status: LAUNCHED');
-      console.log('   ✅ Found in My Agents page with LAUNCHED badge');
-      console.log('   ✅ Chat interface fully functional');
-      console.log('   ✅ All verification steps passed');
 
-      console.log('\n💾 DATA PERSISTENCE:');
-      console.log(`   ✅ Used wallet recorded: ${selectedWalletAddress}`);
-      console.log('   ✅ Next run will automatically use different wallet');
-      console.log('========================================================\n');
     });
   });
 
@@ -471,12 +341,16 @@ test.describe('Agent Creation Flow', () => {
 
     // Wait for Agent Genesis modal
     await agentCreation.waitForAgentGenesisModal(MODAL_TIMEOUT_MS);
-await captureStep(10, 'Confirm Avatar Style Selection', async () => {
+
+    // Attempt style selection if personalization appears before bot-wallet error
+    // const personalizeVisible = await agentCreation.personalizeModal
+    //   .isVisible({ timeout: 5000 })
+    //   .catch(() => false);
+    // if (personalizeVisible) {
       await expect(agentCreation.selectStyleButton).toBeVisible();
       await expect(agentCreation.selectStyleButton).toBeEnabled();
       await agentCreation.confirmStyleSelection();
-    });
-
+    // }
     // STEP 5: Wait for Bot Wallet Error Modal
     await agentCreation.waitForBotWalletError(MODAL_TIMEOUT_MS);
 
@@ -505,8 +379,6 @@ await captureStep(10, 'Confirm Avatar Style Selection', async () => {
   }) => {
     test.setTimeout(AGENT_CREATION_TIMEOUT_MS);
 
-    // Skip if no agent was created in previous test
-    //test.skip(!createdAgentName, 'No agent was created in previous test');
 
     // STEP 1: Navigate to Homepage
     await home.goto();

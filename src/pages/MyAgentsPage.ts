@@ -5,6 +5,9 @@ export class MyAgentsPage extends BasePage {
   // ---------- Page Elements ----------
   readonly pageTitle: Locator;
   readonly sidebarMyAgentsButton: Locator;
+  readonly paginationContainer: Locator;
+  readonly paginationStatus: Locator;
+  readonly paginationNextButton: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -14,6 +17,11 @@ export class MyAgentsPage extends BasePage {
 
     // Sidebar navigation with data-testid (Priority 1)
     this.sidebarMyAgentsButton = page.locator('[data-testid="sidebar-nav-item-agents"]');
+
+    // Pagination controls (scoped to My Agents page)
+    this.paginationContainer = page.locator('div.mt-6.pt-4.px-2.pb-2.flex.justify-center.items-center.gap-4');
+    this.paginationStatus = this.paginationContainer.locator('span.text-sm.text-white\\/60.px-3');
+    this.paginationNextButton = this.paginationContainer.getByRole('button', { name: /next/i });
   }
 
   // ---------- Agent Card Locators ----------
@@ -31,6 +39,18 @@ export class MyAgentsPage extends BasePage {
    */
   getAgentCard(index: number): Locator {
     return this.agentCards.nth(index);
+  }
+
+  getAgentCardById(agentId: string): Locator {
+    return this.page.locator(`[data-testid="agent-card-${agentId}"]`);
+  }
+
+  getAgentLinkByHandle(agentName: string): Locator {
+    return this.page.locator(`a:has-text("@${agentName}")`);
+  }
+
+  getAgentLinkByName(agentName: string): Locator {
+    return this.page.locator(`a:has-text("${agentName}")`);
   }
 
   /**
@@ -164,6 +184,63 @@ export class MyAgentsPage extends BasePage {
     await agentCardLocator.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
       // No cards found - this is valid empty state, continue gracefully
     });
+  }
+
+  async scrollPaginationIntoView() {
+    await this.paginationContainer.scrollIntoViewIfNeeded().catch(() => {});
+  }
+
+  async getPaginationInfo(): Promise<{ currentPage: number; totalPages: number } | null> {
+    const statusText = await this.paginationStatus.textContent().catch(() => '');
+    const match = statusText?.match(/(\d+)\s*of\s*(\d+)/i);
+    if (!match) {
+      return null;
+    }
+    return { currentPage: Number(match[1]), totalPages: Number(match[2]) };
+  }
+
+  async isNextPageVisible(): Promise<boolean> {
+    return await this.paginationNextButton.isVisible({ timeout: 2000 }).catch(() => false);
+  }
+
+  async isNextPageEnabled(): Promise<boolean> {
+    return await this.paginationNextButton.isEnabled().catch(() => false);
+  }
+
+  async goToNextPage() {
+    const previousStatus = (await this.paginationStatus.textContent().catch(() => ''))?.trim() || '';
+    await this.paginationNextButton.scrollIntoViewIfNeeded().catch(() => {});
+    await this.paginationNextButton.click();
+    if (previousStatus) {
+      const statusHandle = await this.paginationStatus.elementHandle().catch(() => null);
+      if (statusHandle) {
+        await this.page.waitForFunction(
+          (el, prev) => (el.textContent || '').trim() !== prev,
+          statusHandle,
+          previousStatus
+        ).catch(() => {});
+      } else {
+        await this.paginationStatus.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+      }
+    } else {
+      await this.paginationStatus.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    }
+  }
+
+  async isAgentVisible(agentName: string, agentId?: string): Promise<boolean> {
+    let visible = await this.getAgentLinkByHandle(agentName).isVisible({ timeout: 2000 }).catch(() => false);
+    if (!visible) {
+      visible = await this.getAgentLinkByName(agentName).isVisible({ timeout: 2000 }).catch(() => false);
+    }
+    if (!visible && agentId) {
+      visible = await this.getAgentCardById(agentId).isVisible({ timeout: 2000 }).catch(() => false);
+    }
+    return visible;
+  }
+
+  async pageContainsText(text: string): Promise<boolean> {
+    const pageText = await this.page.locator('body').textContent().catch(() => '');
+    return pageText?.includes(text) ?? false;
   }
 
   // ---------- Verification Methods ----------

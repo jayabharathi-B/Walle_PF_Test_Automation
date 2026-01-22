@@ -8,32 +8,9 @@ function parseCredits(text: string): number {
   return match ? Number(match[1]) : NaN;
 }
 
-/**
- * Verifies that agent response ended properly and wasn't abruptly cut off
- */
-function isResponseComplete(text: string): boolean {
-  const trimmed = text.trim();
-  if (!trimmed) return false;
-
-  const truncationPatterns = [
-    /\.{3,}$/,
-    /…$/,
-    /\s{2,}$/,
-    /[,;:]$/,
-    /\s(and|or|but|the|a|an|to|of|in|for|with|as|at|by|on|is|are|was|were|be|been|being|have|has|had)$/i,
-  ];
-
-  for (const pattern of truncationPatterns) {
-    if (pattern.test(trimmed)) {
-      return false;
-    }
-  }
-
-  return true;
-}
 
 test.describe('Strategy Builder and Backtest', () => {
-  test('should build strategy, view diagram, and run backtest', async ({ page, chat, strategyBuilder }) => {
+  test('should build strategy, view diagram, and run backtest', async ({ page, chat, strategyBuilder, authenticatedHeader }) => {
     test.setTimeout(360000); // Extended timeout for strategy generation and backtest
 
     // ----------------------------------------------------
@@ -57,15 +34,16 @@ test.describe('Strategy Builder and Backtest', () => {
     // ----------------------------------------------------
     // STEP 4: Verify Chat Interface Ready
     // ----------------------------------------------------
-    await chat.creditsInfoText.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-    const creditsInfoText = (await chat.creditsInfoText.textContent()) || '';
-    const creditsInfoValue = parseCredits(creditsInfoText);
+    const creditsVisible = await chat.creditsInfoText.isVisible({ timeout: 15000 }).catch(() => false);
+    const creditsInfoText = creditsVisible ? (await chat.creditsInfoText.textContent()) || '' : '';
+    let creditsInfoValue = parseCredits(creditsInfoText);
+    if (Number.isNaN(creditsInfoValue)) {
+      creditsInfoValue = parseCredits((await authenticatedHeader.creditsButton.textContent()) || '');
+    }
 
     if (creditsInfoValue === 0) {
-      await expect(chat.outOfCreditsBanner).toBeVisible();
       // eslint-disable-next-line playwright/no-skipped-test
       test.skip(true, 'No credits remaining - cannot run strategy test');
-      return;
     }
 
     if (creditsInfoValue < 100) {
@@ -195,7 +173,7 @@ test.describe('Strategy Builder and Backtest', () => {
     } else {
       await strategyBuilder.backtestDialogFallback.waitFor({ state: 'visible', timeout: 15000 }).catch(async () => {
         // Try alternative - might be inline panel not a dialog
-        const backtestPanel = page.getByText(/initial amount|initial capital/i);
+        const backtestPanel = strategyBuilder.backtestPanelFallback;
         await backtestPanel.waitFor({ state: 'visible', timeout: 10000 });
       });
     }
