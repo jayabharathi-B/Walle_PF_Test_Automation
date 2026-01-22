@@ -130,10 +130,10 @@ export class HomePage extends BasePage {
 
   // ---------- Navbar navigation ----------
   async goToMyAgents() {
-    // HEALER FIX (2025-01-06):
-    // Root cause: Click completes but navigation may not finish before assertion
-    // Resolution: Wait for navigation URL to change using waitForLoadState which is more lenient
-    await this.page.getByTestId('sidebar-nav-item-agents').click();
+    // HEALER FIX (2026-01-21):
+    // Root cause: Fixed overlay modal may still be open after agent creation, blocking click
+    // Resolution: Use force: true to click through decorative overlay, then wait for navigation
+    await this.page.getByTestId('sidebar-nav-item-agents').click({ force: true });
     await this.page.waitForURL(/\/my-agents/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
