@@ -50,7 +50,7 @@ async function getLastAgentMessageText(locator: Locator): Promise<string> {
   let text = '';
   await expect
     .poll(async () => {
-      text = (await locator.innerText().catch(() => ''))?.trim() || '';
+      text = (await locator.innerText())?.trim() || '';
       return text.length;
     }, { timeout: 60000, intervals: [1000, 2000, 3000] })
     .toBeGreaterThan(0);
@@ -65,11 +65,13 @@ test.describe('Agent Chat UI', () => {
     test.setTimeout(CHAT_TEST_TIMEOUT_MS); // Extended timeout for chat flow with agent responses
 
     const waitForTypingToFinish = async () => {
-      await chat.typingIndicatorDots.waitFor({ state: 'visible', timeout: CHAT_NAV_TIMEOUT_MS }).catch(() => {});
-      await chat.typingIndicatorDots.waitFor({ state: 'hidden', timeout: CHAT_RESPONSE_TIMEOUT_MS }).catch(() => {});
+      const typingAppeared = await chat.typingIndicatorDots.isVisible({ timeout: CHAT_NAV_TIMEOUT_MS });
+      if (typingAppeared) {
+        await chat.typingIndicatorDots.waitFor({ state: 'hidden', timeout: CHAT_RESPONSE_TIMEOUT_MS });
+      }
       await expect.poll(
         async () => {
-          const typingVisible = await chat.typingIndicatorDots.isVisible().catch(() => false);
+          const typingVisible = await chat.typingIndicatorDots.isVisible();
           return !typingVisible;
         },
         { timeout: CHAT_RESPONSE_TIMEOUT_MS, intervals: [1000, 2000, 3000] }
@@ -97,13 +99,13 @@ test.describe('Agent Chat UI', () => {
     await chat.clickRandomExploreAgent();
 
     // Wait for chat interface to load
-    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
 
     // ----------------------------------------------------
     // STEP 4: Verify Chat Interface Elements
     // ----------------------------------------------------
     // Wait for credits info to be available (fall back to header if not shown)
-    const creditsVisible = await chat.creditsInfoText.isVisible({ timeout: CHAT_NAV_TIMEOUT_MS }).catch(() => false);
+    const creditsVisible = await chat.creditsInfoText.isVisible({ timeout: CHAT_NAV_TIMEOUT_MS });
     const creditsInfoText = creditsVisible ? (await chat.creditsInfoText.textContent()) || '' : '';
     let creditsInfoValue = parseCredits(creditsInfoText);
     if (Number.isNaN(creditsInfoValue)) {
@@ -111,13 +113,15 @@ test.describe('Agent Chat UI', () => {
     }
 
     if (creditsInfoValue === 0) {
-      // eslint-disable-next-line playwright/no-skipped-test
-      test.skip(true, 'No credits remaining - cannot run chat flow');
+      // NOTE: Credits should be available for this flow; log and continue to surface the issue.
+      // eslint-disable-next-line no-console
+      console.warn('No credits remaining - expected sufficient credits for chat flow.');
     }
 
     if (creditsInfoValue < 50) {
-      // eslint-disable-next-line playwright/no-skipped-test
-      test.skip(true, 'Credits are less than 50 - cannot start chat conversation');
+      // NOTE: Credits should be >= 50 for this flow; log and continue to surface the issue.
+      // eslint-disable-next-line no-console
+      console.warn(`Credits are less than 50 (${creditsInfoValue}) - expected sufficient credits.`);
     }
 
     // Use role-based selectors that work for both landing and active chat states
@@ -131,10 +135,11 @@ test.describe('Agent Chat UI', () => {
     await expect(addAgentsButton).toBeVisible();
     // HEALER FIX (2026-01-22): Chat input stays disabled when credits are 0.
     // Intent: Skip chat send flow if user cannot type.
-    const inputEnabled = await input.isEnabled().catch(() => false);
+    const inputEnabled = await input.isEnabled();
     if (!inputEnabled) {
-      // eslint-disable-next-line playwright/no-skipped-test
-      test.skip(true, 'Chat input disabled - likely out of credits');
+      // NOTE: Input should be enabled for this flow; log and continue to surface the issue.
+      // eslint-disable-next-line no-console
+      console.warn('Chat input disabled - likely out of credits.');
     }
 
     // ----------------------------------------------------
@@ -160,14 +165,12 @@ test.describe('Agent Chat UI', () => {
     await waitForTypingToFinish();
 
     // Wait for credits to update in UI
-    await page.waitForLoadState('networkidle', { timeout: CHAT_NAV_TIMEOUT_MS }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: CHAT_NAV_TIMEOUT_MS });
 
     // Verify agent response completed properly (not truncated)
     const lastAgentResponse = await getLastAgentMessageText(chat.agentMessageBubbles.last());
     if (!isResponseComplete(lastAgentResponse || '')) {
-      // eslint-disable-next-line playwright/no-skipped-test
-      test.skip(true, `BUG: Agent response was truncated - "${lastAgentResponse?.slice(-50)}"`);
-      return;
+      throw new Error(`BUG: Agent response was truncated - "${lastAgentResponse?.slice(-50)}"`);
     }
 
     // Verify credits decreased (with longer timeout and polling)
@@ -199,14 +202,12 @@ test.describe('Agent Chat UI', () => {
     await waitForTypingToFinish();
 
     // Wait for credits to update
-    await page.waitForLoadState('networkidle', { timeout: CHAT_NAV_TIMEOUT_MS }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: CHAT_NAV_TIMEOUT_MS });
 
     // Verify second agent response completed properly (not truncated)
     const secondAgentResponse = await getLastAgentMessageText(chat.agentMessageBubbles.last());
     if (!isResponseComplete(secondAgentResponse || '')) {
-      // eslint-disable-next-line playwright/no-skipped-test
-      test.skip(true, `BUG: Agent response was truncated - "${secondAgentResponse?.slice(-50)}"`);
-      return;
+      throw new Error(`BUG: Agent response was truncated - "${secondAgentResponse?.slice(-50)}"`);
     }
 
     // Verify credits decreased again
@@ -222,8 +223,12 @@ test.describe('Agent Chat UI', () => {
     // ----------------------------------------------------
     const userMessagesBeforeReload = await chat.userMessageBubbles.count();
 
+    // HEALER FIX (2026-01-30): Wait for page to stabilize after reload
+    // Root cause: Page shows skeleton loaders after reload, textbox not immediately visible
+    // Resolution: Wait for networkidle and increase timeout
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+    await expect(chat.chatInputTextbox).toBeVisible({ timeout: 30000 });
 
     // Verify messages persisted
     await expect.poll(

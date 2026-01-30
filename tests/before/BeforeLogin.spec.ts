@@ -28,7 +28,7 @@ test('verify homepage content', async ({ home }) => {
   // Root cause: Third button (Build Defi Strategies) not appearing - page loading incrementally
   // Resolution: Wait for domcontentloaded + wait for welcome text (indicates page loaded)
   // Fast-Track verification: More reliable than networkidle for dynamic content
-  await home.page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => {});
+  await home.page.waitForLoadState('domcontentloaded', { timeout: 10000 });
   await expect(home.welcomeText).toBeVisible({ timeout: 15000 });
   // Wait for all three CTA buttons to render
   await expect(home.buildDefiStrategiesBtn).toBeVisible({ timeout: 10000 });
@@ -117,7 +117,7 @@ test('verify navigation bar links', async ({ home }) => {
   await expect.poll(
     async () => {
       const url = home.page.url();
-      const modalVisible = await home.connectToContinueText.isVisible().catch(() => false);
+      const modalVisible = await home.connectToContinueText.isVisible();
       return url.includes('/chat') || modalVisible;
     },
     { timeout: 10000, intervals: [500, 1000, 1500] }
@@ -125,7 +125,7 @@ test('verify navigation bar links', async ({ home }) => {
 
   // Check if we navigated OR if modal appeared
   const currentUrl = home.page.url();
-  const modalVisible = await home.connectToContinueText.isVisible().catch(() => false);
+  const modalVisible = await home.connectToContinueText.isVisible();
 
   if (currentUrl.includes('/chat')) {
     // Navigation happened - expect modal and stay on chat
@@ -274,6 +274,6 @@ test('Explore page shows agents in all tabs', async ({ home, explore }) => {
   expect(tabCount).toBeGreaterThan(0);
   counts.forEach((count) => {
     // HEALER FIX (2026-01-22): Tab counts vary by data; intent is that each tab has agents.
-    expect(count).toBeGreaterThan(0);
+    expect(count).toBe(15);
   });
 });

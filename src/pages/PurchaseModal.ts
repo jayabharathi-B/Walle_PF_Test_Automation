@@ -96,7 +96,7 @@ export class PurchaseModal extends BasePage {
   async clickTransferTab() {
     await this.transferTab.click();
     // Wait for tab content transition
-    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   // ---------- External Deposit Actions ----------
@@ -136,7 +136,7 @@ export class PurchaseModal extends BasePage {
 
   // ---------- Helpers ----------
   async isErrorMessageVisible(): Promise<boolean> {
-    return await this.insufficientBalanceMessage.isVisible().catch(() => false);
+    return await this.insufficientBalanceMessage.isVisible();
   }
 
   async getErrorMessage(): Promise<string> {

@@ -129,6 +129,6 @@ export class CreditsPage extends BasePage {
   }
 
   async isPurchaseButtonVisible(): Promise<boolean> {
-    return await this.purchaseCreditsButton.isVisible().catch(() => false);
+    return await this.purchaseCreditsButton.isVisible();
   }
 }

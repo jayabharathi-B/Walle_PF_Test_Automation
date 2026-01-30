@@ -169,7 +169,7 @@ export class AgentSelectionFlow extends BasePage {
     // Resolution: Navigate, wait for load, then close modals defensively
 
     await this.goto();
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 });
 
     await this.ensureNoModalOpen();
 
@@ -181,12 +181,12 @@ export class AgentSelectionFlow extends BasePage {
     // HEALER FIX (2026-01-12): More robust modal closing for serial mode
     // Press Escape multiple times to ensure all modals/overlays are dismissed
     for (let i = 0; i < 3; i++) {
-      await this.page.keyboard.press('Escape').catch(() => {});
+      await this.page.keyboard.press('Escape');
     }
 
     // Wait for dialogs and portal overlays to be hidden
-    await this.page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-    await this.page.locator('[data-portal="safe-portal"]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await this.page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5000 });
+    await this.page.locator('[data-portal="safe-portal"]').waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ========================================

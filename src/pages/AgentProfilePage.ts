@@ -32,6 +32,6 @@ export class AgentProfilePage extends BasePage {
   async clickChatButton() {
     await this.chatButton.click();
     // Wait for navigation to chat page
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 });
   }
 }

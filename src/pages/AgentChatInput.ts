@@ -17,7 +17,10 @@ export class AgentChatInput extends BasePage {
 
     // ---------- Homepage elements ----------
     this.addAgentsButton = page.getByTestId('add-agents-home');
-    this.chatInput = page.getByTestId('chat-input');
+    // HEALER FIX (2026-01-30): chat-input testid may not be present in all views
+    // Root cause: Agent chat view shows textbox without data-testid
+    // Resolution: Use role-based fallback selector (last textbox is usually the chat input)
+    this.chatInput = page.getByRole('textbox').last();
     this.sendButton = page.getByTestId('send-button');
 
     // ---------- Agent thumbnail container ----------

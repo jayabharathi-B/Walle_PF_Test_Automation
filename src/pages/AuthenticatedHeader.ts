@@ -56,7 +56,7 @@ export class AuthenticatedHeader extends BasePage {
    * @returns true if wallet button is visible, false otherwise
    */
   async isAuthenticated(): Promise<boolean> {
-    return await this.walletAddressButton.isVisible().catch(() => false);
+    return await this.walletAddressButton.isVisible();
   }
 
   /**
@@ -64,7 +64,7 @@ export class AuthenticatedHeader extends BasePage {
    * @returns true if dropdown is visible, false otherwise
    */
   async isDropdownOpen(): Promise<boolean> {
-    return await this.walletDropdown.isVisible().catch(() => false);
+    return await this.walletDropdown.isVisible();
   }
 
   /**

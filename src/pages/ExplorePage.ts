@@ -127,7 +127,7 @@ export class ExplorePage extends BasePage {
       // HEALER FIX: Added explicit wait for visibility after tab click
       await this.agentCards.first().waitFor({ state: 'visible', timeout: 15000 });
       // HEALER FIX: Added network idle wait to ensure all agents load in the tab
-      await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+      await this.page.waitForLoadState('networkidle', { timeout: 5000 });
 
       const count = await this.agentCards.count();
 

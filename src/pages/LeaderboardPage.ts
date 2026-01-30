@@ -91,7 +91,7 @@ export class LeaderboardPage extends BasePage {
     // causing toBeHidden() to timeout. The content may load before the loading text appears.
     // Resolution: Use graceful wait (allow timeout) for loading text, then ensure table is visible.
     // This matches the more robust strategy in waitForBubblesLoaded().
-    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 });
     await this.leaderboardHeading.waitFor({ state: 'visible', timeout: 15000 });
     await this.rankHeader.waitFor({ state: 'visible', timeout: 15000 });
   }
@@ -100,7 +100,7 @@ export class LeaderboardPage extends BasePage {
     // HEALER FIX (2026-01-05): Use a more robust wait strategy.
     // Wait for loading text to be hidden OR just wait for the heading and content to appear.
     // Sometimes "Loading agents..." might not even show up if it's too fast.
-    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => { });
+    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 });
     await this.bubblesHeading.waitFor({ state: 'visible', timeout: 15000 });
     // CRITICAL: Ensure the bubbles map is present before proceeding
     await this.page.getByTestId('leaderboard-bubbles-map').waitFor({ state: 'visible', timeout: 15000 });
@@ -258,7 +258,7 @@ export class LeaderboardPage extends BasePage {
 
   async ensureNoModalOpen() {
     // Close any modal with Escape
-    await this.page.keyboard.press('Escape').catch(() => { });
-    await this.page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await this.page.keyboard.press('Escape');
+    await this.page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5000 });
   }
 }

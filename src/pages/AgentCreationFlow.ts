@@ -127,14 +127,22 @@ export class AgentCreationFlow extends BasePage {
     this.botWalletErrorCloseButton = this.botWalletErrorModal.getByRole('button', { name: /close/i });
 
     // ---------- Agent Already Exists Modal ----------
-    // HEALER FIX (2026-01-21): Agent exists modal is a fixed div, not role="dialog"
-    this.agentExistsModal = page.getByTestId('agent-exists-modal');
-    this.agentExistsHeading = page.getByTestId('existing-agent-heading');
-    this.chatWithAgentButton = this.agentExistsModal.getByRole('button', { name: /chat with agent/i });
+    // HEALER FIX (2026-01-30): Modal has heading "This agent already active" without data-testid
+    // Root cause: The modal doesn't use data-testid, must locate by heading text
+    // Resolution: Use heading text to find modal container, then locate button
+    this.agentExistsHeading = page.getByRole('heading', { name: /this agent already active/i });
+    // The modal container holds the heading - use filter to find parent
+    this.agentExistsModal = page.locator('div').filter({ has: this.agentExistsHeading }).first();
+    this.chatWithAgentButton = page.getByRole('button', { name: /chat with agent/i });
 
     // ---------- Auth Gate Modal ----------
-    this.authGateModal = page.getByTestId('auth-gate-modal');
-    this.authGateCloseButton = page.getByTestId('auth-gate-close');
+    // HEALER FIX (2026-01-30): Auth gate modal may not have testid
+    // Root cause: Modal shows "Signup (or) SignIn to Continue" without data-testid
+    // Resolution: Use heading text to find modal, and locate close button by role
+    const authGateHeading = page.getByRole('heading', { name: /signup.*signin to continue/i });
+    this.authGateModal = page.locator('div').filter({ has: authGateHeading }).first();
+    // Close button may be inside the modal or have testid
+    this.authGateCloseButton = this.authGateModal.getByRole('button').first();
 
     // ---------- Agent Preview Modal ----------
     // HEALER FIX (2026-01-21): Preview section is inside the main Agent Genesis modal, not a separate modal
@@ -255,12 +263,12 @@ export class AgentCreationFlow extends BasePage {
 
   // ---------- Bot/Exchange Wallet Error Modal ----------
   async waitForBotWalletError(timeout: number = 30000) {
-    await this.botWalletErrorModal.waitFor({ state: 'visible', timeout }).catch(() => {});
+    await this.botWalletErrorModal.waitFor({ state: 'visible', timeout });
   }
 
   async closeBotWalletError() {
     await this.botWalletErrorCloseButton.click();
-    await this.botWalletErrorModal.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await this.botWalletErrorModal.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- Agent Already Exists Modal ----------
@@ -273,16 +281,32 @@ export class AgentCreationFlow extends BasePage {
   }
 
   // ---------- Auth Gate Modal ----------
+  // HEALER FIX (2026-01-30): Handle flaky auth gate modal that appears briefly
+  // Root cause: Auth gate modal can appear and disappear quickly during agent creation
+  // The close button becomes "not stable" or "detached from DOM" during click
+  // Resolution: Use force click to bypass stability checks and catch detachment errors
   async dismissAuthGateIfPresent(): Promise<boolean> {
-    const visible = await this.authGateModal.isVisible({ timeout: 2000 }).catch(() => false);
+    const visible = await this.authGateModal.isVisible({ timeout: 2000 });
     if (!visible) {
       return false;
     }
 
-    const closeVisible = await this.authGateCloseButton.isVisible({ timeout: 2000 }).catch(() => false);
+    const closeVisible = await this.authGateCloseButton.isVisible({ timeout: 2000 });
     if (closeVisible) {
-      await this.authGateCloseButton.click().catch(() => {});
-      await this.authGateModal.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      try {
+        // Use force click to bypass stability checks - modal may be animating
+        // eslint-disable-next-line playwright/no-force-option
+        await this.authGateCloseButton.click({ force: true, timeout: 5000 });
+        await this.authGateModal.waitFor({ state: 'hidden', timeout: 5000 });
+      } catch {
+        // Modal may have already closed on its own - that's fine
+        const stillVisible = await this.authGateModal.isVisible({ timeout: 1000 });
+        if (stillVisible) {
+          // Try one more time with a fresh reference
+          // eslint-disable-next-line playwright/no-force-option
+          await this.authGateCloseButton.click({ force: true, timeout: 3000 }).catch(() => {});
+        }
+      }
       return true;
     }
 
@@ -303,7 +327,7 @@ export class AgentCreationFlow extends BasePage {
         // Continue polling within the deadline.
       }
 
-      const gateVisible = await this.authGateModal.isVisible().catch(() => false);
+      const gateVisible = await this.authGateModal.isVisible();
       if (gateVisible) {
         await this.dismissAuthGateIfPresent();
       }
@@ -341,9 +365,9 @@ export class AgentCreationFlow extends BasePage {
 
   async closePreviewModal() {
     // DISCOVERY (2026-01-21): Close preview modal using data-testid for reliability
-    await this.closePreviewButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-    await this.closePreviewButton.click().catch(() => {});
-    await this.closePreviewButton.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await this.closePreviewButton.waitFor({ state: 'visible', timeout: 5000 });
+    await this.closePreviewButton.click();
+    await this.closePreviewButton.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- Discount Code Modal ----------
@@ -372,7 +396,7 @@ export class AgentCreationFlow extends BasePage {
 
       try {
         await this.page.goto('/my-agents', { waitUntil: 'domcontentloaded' });
-        await this.page.waitForLoadState('networkidle').catch(() => {});
+        await this.page.waitForLoadState('networkidle');
       } catch {
         return;
       }
@@ -380,11 +404,11 @@ export class AgentCreationFlow extends BasePage {
       // If we have agent name, try to find and click it
       if (agentName) {
         const agentLink = this.page.locator(`a:has-text("@${agentName}")`).first();
-        const agentLinkVisible = await agentLink.isVisible({ timeout: 5000 }).catch(() => false);
+        const agentLinkVisible = await agentLink.isVisible({ timeout: 5000 });
 
         if (agentLinkVisible) {
           await agentLink.click();
-          await this.page.waitForURL(/\/chat/, { timeout: 10000 }).catch(() => {});
+          await this.page.waitForURL(/\/chat/, { timeout: 10000 });
           return;
         }
       }
@@ -399,7 +423,7 @@ export class AgentCreationFlow extends BasePage {
   // ---------- Close Modal Helpers ----------
   async closeAgentGenesisModal() {
     await this.agentGenesisCloseButton.click();
-    await this.agentGenesisModal.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await this.agentGenesisModal.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   async closeAnyOpenModal() {
@@ -408,7 +432,7 @@ export class AgentCreationFlow extends BasePage {
     const overlays = this.page.locator('div.fixed.inset-0, div[class*="modal"], div[class*="overlay"], [role="dialog"]');
     for (let i = 0; i < 3; i++) {
       await this.page.keyboard.press('Escape');
-      await overlays.first().waitFor({ state: 'hidden', timeout: 500 }).catch(() => {});
+      await overlays.first().waitFor({ state: 'hidden', timeout: 500 });
     }
 
     // Look for close buttons with common patterns (close, ×, cancel)
@@ -417,7 +441,7 @@ export class AgentCreationFlow extends BasePage {
 
     if (count > 0) {
       try {
-        await closeButtons.first().click().catch(() => {});
+        await closeButtons.first().click();
       } catch {
         // Silently fail if no button to click
       }
@@ -429,7 +453,7 @@ export class AgentCreationFlow extends BasePage {
     if (overlayCount > 0) {
       // If there are overlays, try pressing Escape again
       await this.page.keyboard.press('Escape');
-      await overlays.first().waitFor({ state: 'hidden', timeout: 500 }).catch(() => {});
+      await overlays.first().waitFor({ state: 'hidden', timeout: 500 });
     }
   }
 }

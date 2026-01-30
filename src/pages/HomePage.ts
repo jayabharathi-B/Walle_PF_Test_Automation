@@ -172,7 +172,7 @@ export class HomePage extends BasePage {
     // Resolution: Click without waiting for navigation, as the URL doesn't change.
     await this.page.getByTestId('sidebar-nav-item-dashboard').click();
     // Allow any pending navigation to complete
-    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => { });
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 });
   }
 
 
@@ -203,7 +203,7 @@ export class HomePage extends BasePage {
     // Resolution: Navigate, wait for load, then close modals defensively
 
     await this.goto();
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 });
 
     await this.ensureNoModalOpen();
 
@@ -216,10 +216,10 @@ export class HomePage extends BasePage {
     const dialog = this.page.locator('[role="dialog"]');
 
     // Check if dialog exists and is visible, only then close it
-    const isVisible = await dialog.isVisible().catch(() => false);
+    const isVisible = await dialog.isVisible();
     if (isVisible) {
       await this.page.keyboard.press('Escape');
-      await dialog.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      await dialog.waitFor({ state: 'hidden', timeout: 5000 });
     }
   }
 

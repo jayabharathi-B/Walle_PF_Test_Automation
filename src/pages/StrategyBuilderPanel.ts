@@ -37,25 +37,29 @@ export class StrategyBuilderPanel extends BasePage {
     super(page);
 
     this.generateStrategyButton = page.getByRole('button', { name: /generate strategy/i });
-    this.strategyDialog = page.getByTestId('strategy-panel');
+    // HEALER FIX (2026-01-30): Strategy dialog is a dialog with title "Strategy visualization panel"
+    this.strategyDialog = page.getByRole('dialog', { name: /strategy visualization panel/i });
     this.diagramHeading = page.getByRole('heading', { name: /strategy diagram/i });
-    this.nodeCountText = page.getByTestId('strategy-node-count');
+    // HEALER FIX (2026-01-30): Node count text is a paragraph with "X configuration nodes"
+    this.nodeCountText = page.getByText(/\d+\s*configuration\s*nodes/i);
     // HEALER FIX (2026-01-30): Button renamed from "Backtest" to "Simulate"
     this.backtestButton = page.getByRole('button', { name: /^simulate$/i });
     this.executeButton = page.getByRole('button', { name: /execute/i });
-    this.fullscreenButton = page.getByRole('button', { name: /fullscreen/i });
+    // HEALER FIX (2026-01-30): Button name is "Open fullscreen"
+    this.fullscreenButton = page.getByRole('button', { name: /open fullscreen/i });
     this.closePanelButton = page.getByRole('button', { name: /close panel/i });
     this.strategyErrorText = page.getByTestId('strategy-generation-error-message');
     this.diagramErrorText = page.getByTestId('strategy-generation-error-message');
 
-    this.backtestHeading = page.getByRole('heading', { name: /strategy backtest/i });
+    // HEALER FIX (2026-01-30): Modal renamed from "Strategy Backtest" to "Strategy Simulation"
+    this.backtestHeading = page.getByRole('heading', { name: /strategy simulation/i });
     this.backtestContainer = page.getByTestId('strategy-panel');
     this.backtestDialogFallback = page.getByTestId('strategy-backtest-modal');
     this.backtestPanelFallback = page.getByTestId('strategy-panel');
     this.backtestErrorText = page.getByTestId('backtest-error-message');
 
     this.resultsPanel = this.strategyDialog;
-    this.resultsTablist = page.getByTestId('backtest-results-tabs');
+    this.resultsTablist = page.getByTestId('strategy-panel').getByTestId('backtest-results-tabs');
     this.summaryTab = page.getByTestId('backtest-results-tab-summary');
     this.tableTab = page.getByTestId('backtest-results-tab-table');
     this.chartTab = page.getByTestId('backtest-results-tab-chart');
@@ -67,18 +71,19 @@ export class StrategyBuilderPanel extends BasePage {
   }
 
   // HEALER FIX (2026-01-30): Updated selectors for new Simulation modal UI
-  // Root cause: Modal was redesigned - testids no longer exist
-  // Resolution: Use label/role-based selectors instead
+  // Root cause: Modal was redesigned - textbox accessible name is "1,000" (from placeholder), not "Initial Capital"
+  // Inspector verification (error-context.md line 155):
+  //   - Found: textbox "1,000" [ref=e237]: "1000"
+  //   - The textbox accessible name is "1,000" (the placeholder text)
+  // Resolution: Use getByRole with name matching placeholder "1,000"
   getInitialCapitalInput(): Locator {
-    // The textbox is labeled "Initial Capital" and contains currency value
-    return this.page.getByRole('textbox', { name: /initial capital/i }).or(
-      this.page.locator('input[type="text"]').filter({ hasText: /1,?000/ })
-    );
+    // The textbox accessible name is "1,000" (from placeholder)
+    return this.page.getByRole('textbox', { name: '1,000' });
   }
 
   getTimeframeControl(): Locator {
-    // The combobox is for "Backtest Period"
-    return this.page.getByRole('combobox').filter({ has: this.page.locator('option:has-text("1 Month")') });
+    // The combobox contains "1 Month" option - find by role
+    return this.page.getByRole('combobox');
   }
 
   getInitiateBacktestButton(): Locator {

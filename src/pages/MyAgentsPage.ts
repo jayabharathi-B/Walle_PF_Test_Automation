@@ -49,12 +49,17 @@ export class MyAgentsPage extends BasePage {
     return this.page.locator(`[data-testid="agent-card-${agentId}"]`);
   }
 
+  // HEALER FIX (2026-01-30): Use specific selector to avoid strict mode violation
+  // Root cause: Both card container (div) and name link (a) match [data-testid^="agent-card-"]
+  // Resolution: Use agent-card-link-* testid directly for link, and div:not(link) for card
   getAgentLinkByHandle(agentName: string): Locator {
-    return this.page.locator('[data-testid^="agent-card-"]').filter({ hasText: agentName });
+    // Use the agent-card-link-* testid which is the link element (more specific)
+    return this.page.locator('a[data-testid^="agent-card-link-"]').filter({ hasText: agentName });
   }
 
   getAgentLinkByName(agentName: string): Locator {
-    return this.page.locator('[data-testid^="agent-card-"]').filter({ hasText: agentName });
+    // Use the agent-card-link-* testid which is the link element (more specific)
+    return this.page.locator('a[data-testid^="agent-card-link-"]').filter({ hasText: agentName });
   }
 
   /**
@@ -111,7 +116,7 @@ export class MyAgentsPage extends BasePage {
     // Intent: Provide clear error message when authentication fails
     // If auth expired, this will fail fast with clear message instead of timeout
     const signInError = this.page.getByTestId('chat-auth-required');
-    if (await signInError.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (await signInError.isVisible({ timeout: 2000 })) {
       throw new Error(
         '❌ AUTHENTICATION REQUIRED\n\n' +
         'The authentication tokens in auth/google.json have expired.\n\n' +
@@ -179,30 +184,29 @@ export class MyAgentsPage extends BasePage {
    * Handles both cases: agents exist OR empty state
    */
   async waitForAgentCardsToLoad() {
-    // HEALER FIX (2026-01-16): Fully defensive empty state handling
-    // Root cause: Re-throwing error when empty state text doesn't match pattern
-    // Resolution: If no cards found after timeout, treat as valid empty state (don't fail)
-    // Fast-Track verification: Standard Playwright pattern for optional content
-    // Terminal verification: npx playwright test tests/after/MyAgentsFlow.spec.ts → exit code 0 ✅
+    // HEALER FIX (2026-01-30): Remove networkidle wait - pages often have continuous network activity
+    // Root cause: networkidle never completes due to websockets/polling
+    // Resolution: Wait for DOM content and agent cards directly instead
 
-    // Wait for page to stabilize (loading complete)
-    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    // Wait for DOM to be ready
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+
+    // Try networkidle with short timeout but don't fail if it times out
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
     // Try to find agent cards - wait for at least one to be visible if they exist
     const agentCardLocator = this.page.locator('[data-testid^="agent-card-"]:not([data-testid="agent-card-skeleton"])');
 
     // Wait for either: cards become visible OR timeout (empty state)
-    await agentCardLocator.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
-      // No cards found - this is valid empty state, continue gracefully
-    });
+    await agentCardLocator.first().isVisible({ timeout: 15000 }).catch(() => {});
   }
 
   async scrollPaginationIntoView() {
-    await this.paginationContainer.scrollIntoViewIfNeeded().catch(() => {});
+    await this.paginationContainer.scrollIntoViewIfNeeded();
   }
 
   async getPaginationInfo(): Promise<{ currentPage: number; totalPages: number } | null> {
-    const statusText = await this.paginationStatus.textContent().catch(() => '');
+    const statusText = await this.paginationStatus.textContent();
     const match = statusText?.match(/(\d+)\s*of\s*(\d+)/i);
     if (!match) {
       return null;
@@ -211,46 +215,46 @@ export class MyAgentsPage extends BasePage {
   }
 
   async isNextPageVisible(): Promise<boolean> {
-    return await this.paginationNextButton.isVisible({ timeout: 2000 }).catch(() => false);
+    return await this.paginationNextButton.isVisible({ timeout: 2000 });
   }
 
   async isNextPageEnabled(): Promise<boolean> {
-    return await this.paginationNextButton.isEnabled().catch(() => false);
+    return await this.paginationNextButton.isEnabled();
   }
 
   async goToNextPage() {
-    const previousStatus = (await this.paginationStatus.textContent().catch(() => ''))?.trim() || '';
-    await this.paginationNextButton.scrollIntoViewIfNeeded().catch(() => {});
+    const previousStatus = (await this.paginationStatus.textContent())?.trim() || '';
+    await this.paginationNextButton.scrollIntoViewIfNeeded();
     await this.paginationNextButton.click();
     if (previousStatus) {
-      const statusHandle = await this.paginationStatus.elementHandle().catch(() => null);
+      const statusHandle = await this.paginationStatus.elementHandle();
       if (statusHandle) {
         await this.page.waitForFunction(
           (el, prev) => (el.textContent || '').trim() !== prev,
           statusHandle,
           previousStatus
-        ).catch(() => {});
+        );
       } else {
-        await this.paginationStatus.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+        await this.paginationStatus.waitFor({ state: 'visible', timeout: 5000 });
       }
     } else {
-      await this.paginationStatus.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+      await this.paginationStatus.waitFor({ state: 'visible', timeout: 5000 });
     }
   }
 
   async isAgentVisible(agentName: string, agentId?: string): Promise<boolean> {
-    let visible = await this.getAgentLinkByHandle(agentName).isVisible({ timeout: 2000 }).catch(() => false);
+    let visible = await this.getAgentLinkByHandle(agentName).isVisible({ timeout: 2000 });
     if (!visible) {
-      visible = await this.getAgentLinkByName(agentName).isVisible({ timeout: 2000 }).catch(() => false);
+      visible = await this.getAgentLinkByName(agentName).isVisible({ timeout: 2000 });
     }
     if (!visible && agentId) {
-      visible = await this.getAgentCardById(agentId).isVisible({ timeout: 2000 }).catch(() => false);
+      visible = await this.getAgentCardById(agentId).isVisible({ timeout: 2000 });
     }
     return visible;
   }
 
   async pageContainsText(text: string): Promise<boolean> {
-    const pageText = await this.page.locator('body').textContent().catch(() => '');
+    const pageText = await this.page.locator('body').textContent();
     return pageText?.includes(text) ?? false;
   }
 

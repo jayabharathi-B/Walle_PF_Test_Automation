@@ -36,8 +36,11 @@ export class ChatPage extends BasePage {
 
     // Chat interface locators
     this.chatHeading = page.getByTestId('chat-header');
-    this.chatInput = page.getByTestId('chat-input');
-    this.chatInputTextbox = page.getByRole('textbox');
+    // HEALER FIX (2026-01-30): chat-input testid may not be present in all views
+    // Root cause: Agent chat view shows textbox without data-testid
+    // Resolution: Use role-based fallback selector
+    this.chatInput = page.getByRole('textbox').last();
+    this.chatInputTextbox = page.getByRole('textbox').last();
     this.chatSendButton = page.getByRole('button', { name: 'Send' });
     this.addAgentsButton = page.getByRole('button', { name: /add agents/i });
     this.suggestionButtons = page.getByTestId('command-suggestions').locator('button');
@@ -154,7 +157,7 @@ export class ChatPage extends BasePage {
 
   async getSessionCount(): Promise<number> {
     // Wait for page to stabilize - either sessions load or empty state appears
-    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    await this.page.waitForLoadState('networkidle', { timeout: 15000 });
     return await this.sessionCards.count();
   }
 
@@ -176,8 +179,8 @@ export class ChatPage extends BasePage {
   // ---------- Chat Sessions Page - Actions ----------
   async navigateToChatPage() {
     await this.page.goto('/chat', { waitUntil: 'domcontentloaded' });
-    // Wait for page to stabilize after navigation
-    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    // Wait for a stable UI signal instead of networkidle (chat keeps long-lived connections)
+    await this.pageTitle.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   async verifyPageTitle() {
@@ -225,17 +228,18 @@ export class ChatPage extends BasePage {
 
     // Get agent name before clicking (card might get detached after click)
     const agentCard = agentCards.nth(randomIndex);
-    const agentName = await agentCard.textContent().catch(() => '');
+    const agentName = await agentCard.textContent();
 
     // Double-click to open 1:1 chat - use force to bypass any intercepting elements
     // eslint-disable-next-line playwright/no-force-option
     await agentCard.dblclick({ force: true });
 
     // Wait for modal to close and chat to load
-    await this.exploreModal.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
-    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    // HEALER FIX (2026-01-30): Remove blocking networkidle - chat pages have continuous connections
+    await this.exploreModal.waitFor({ state: 'hidden', timeout: 15000 });
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
-    const headerText = await this.getChatHeaderText().catch(() => '');
+    const headerText = await this.getChatHeaderText();
     return (headerText?.trim() || agentName?.trim() || '');
   }
 
@@ -249,37 +253,38 @@ export class ChatPage extends BasePage {
     await agentCards.first().waitFor({ state: 'visible', timeout: 10000 });
 
     const agentCard = agentCards.nth(index);
-    const agentName = await agentCard.textContent().catch(() => '');
+    const agentName = await agentCard.textContent();
 
     // Double-click to open 1:1 chat - use force to bypass any intercepting elements
     // eslint-disable-next-line playwright/no-force-option
     await agentCard.dblclick({ force: true });
 
     // Wait for modal to close and chat to load
-    await this.exploreModal.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
-    await this.page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    // HEALER FIX (2026-01-30): Remove blocking networkidle - chat pages have continuous connections
+    await this.exploreModal.waitFor({ state: 'hidden', timeout: 15000 });
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
-    const headerText = await this.getChatHeaderText().catch(() => '');
+    const headerText = await this.getChatHeaderText();
     return (headerText?.trim() || agentName?.trim() || '');
   }
 
   async clickSessionCard(index: number = 0) {
     const sessionCard = this.getSessionCard(index);
     await sessionCard.click();
-    // Wait for chat to load after session selection
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    // HEALER FIX (2026-01-30): Remove blocking networkidle - chat pages have continuous connections
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
   async hasNoSessions(): Promise<boolean> {
     const noSessionsText = this.page.getByTestId('chat-no-sessions');
-    return await noSessionsText.isVisible({ timeout: 5000 }).catch(() => false);
+    return await noSessionsText.isVisible({ timeout: 5000 });
   }
 
   async returnToChatSessionsPage() {
     // Use sidebar navigation as recommended by scout
     await this.page.locator('[data-testid="sidebar-nav-item-chat"]').click();
     // Wait for navigation to complete
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 });
   }
 
   // ---------- Assertions ----------
@@ -301,8 +306,8 @@ export class ChatPage extends BasePage {
     const agentInPage = this.page.getByText(new RegExp(cleanName, 'i')).first();
 
     // Check if either selector finds the agent name (defensive approach)
-    const testIdVisible = await agentFromTestId.isVisible({ timeout: 5000 }).catch(() => false);
-    const textVisible = await agentInPage.isVisible({ timeout: 5000 }).catch(() => false);
+    const testIdVisible = await agentFromTestId.isVisible({ timeout: 5000 });
+    const textVisible = await agentInPage.isVisible({ timeout: 5000 });
 
     if (!testIdVisible && !textVisible) {
       // Don't fail - chat may have opened successfully even if name not prominently displayed

@@ -25,7 +25,7 @@ export class ConnectModal extends BasePage {
   }
 
   async isVisible(): Promise<boolean> {
-    return await this.modal.isVisible().catch(() => false);
+    return await this.modal.isVisible();
   }
 
   async waitForModal() {
