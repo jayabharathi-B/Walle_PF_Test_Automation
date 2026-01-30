@@ -236,8 +236,9 @@ test('Explore agents multi-select and guarded start chat flow', async ({ home, e
   await expect(explore.getActionButton()).toBeEnabled();
 
   // Remaining checkboxes should be disabled
+  // HEALER FIX (2026-01-29): Cards duplicated in DOM, use index 6 (4th actual card = 3*2)
   const remainingCheckboxes = explore.agentCards
-    .nth(3)
+    .nth(6)
     .getByRole('button');
   await expect(remainingCheckboxes).toBeDisabled();
 

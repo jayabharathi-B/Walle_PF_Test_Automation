@@ -19,9 +19,9 @@ export class MyAgentsPage extends BasePage {
     this.sidebarMyAgentsButton = page.locator('[data-testid="sidebar-nav-item-agents"]');
 
     // Pagination controls (scoped to My Agents page)
-    this.paginationContainer = page.locator('div.mt-6.pt-4.px-2.pb-2.flex.justify-center.items-center.gap-4');
-    this.paginationStatus = this.paginationContainer.locator('span.text-sm.text-white\\/60.px-3');
-    this.paginationNextButton = this.paginationContainer.getByRole('button', { name: /next/i });
+    this.paginationContainer = page.getByTestId('my-agents-pagination');
+    this.paginationStatus = page.getByTestId('my-agents-pagination-status');
+    this.paginationNextButton = page.getByTestId('my-agents-pagination-next');
   }
 
   // ---------- Agent Card Locators ----------
@@ -29,9 +29,13 @@ export class MyAgentsPage extends BasePage {
   /**
    * Get all agent cards (excluding skeleton loading cards)
    * CRITICAL: Must exclude skeleton cards to avoid timing issues
+   * HEALER FIX (2026-01-30): Use div selector to exclude agent-card-link-* elements
+   * Root cause: Both card containers (DIV) and name links (A) have data-testid^="agent-card-"
+   * The links have testid like "agent-card-link-{uuid}" but don't contain images
+   * Resolution: Use div[data-testid] and exclude links with :not([data-testid*="link"])
    */
   get agentCards(): Locator {
-    return this.page.locator('[data-testid^="agent-card-"]:not([data-testid="agent-card-skeleton"])');
+    return this.page.locator('div[data-testid^="agent-card-"]:not([data-testid="agent-card-skeleton"]):not([data-testid*="link"])');
   }
 
   /**
@@ -46,15 +50,18 @@ export class MyAgentsPage extends BasePage {
   }
 
   getAgentLinkByHandle(agentName: string): Locator {
-    return this.page.locator(`a:has-text("@${agentName}")`);
+    return this.page.locator('[data-testid^="agent-card-"]').filter({ hasText: agentName });
   }
 
   getAgentLinkByName(agentName: string): Locator {
-    return this.page.locator(`a:has-text("${agentName}")`);
+    return this.page.locator('[data-testid^="agent-card-"]').filter({ hasText: agentName });
   }
 
   /**
    * Get agent avatar image within a card
+   * HEALER FIX (2026-01-29): agent-thumbnail testid doesn't exist
+   * Root cause: Agent cards use img[alt="Agent avatar"] instead of data-testid
+   * Resolution: Use alt text selector as fallback
    */
   getAgentImage(card: Locator): Locator {
     return card.locator('img[alt="Agent avatar"]');
@@ -69,16 +76,20 @@ export class MyAgentsPage extends BasePage {
 
   /**
    * Get LAUNCHED tag within a card
+   * HEALER FIX (2026-01-29): agent-status-launched testid doesn't exist
+   * Resolution: Use text selector to find LAUNCHED tag
    */
   getLaunchedTag(card: Locator): Locator {
-    return card.locator('text=LAUNCHED');
+    return card.getByText('LAUNCHED', { exact: true });
   }
 
   /**
    * Get ANALYSED tag within a card
+   * HEALER FIX (2026-01-29): agent-status-analysed testid doesn't exist
+   * Resolution: Use text selector to find ANALYSED tag
    */
   getAnalysedTag(card: Locator): Locator {
-    return card.locator('text=ANALYSED');
+    return card.getByText('ANALYSED', { exact: true });
   }
 
   // ---------- Navigation Actions ----------
@@ -99,7 +110,7 @@ export class MyAgentsPage extends BasePage {
     // Resolution: Check for "Sign In Required" error before waiting for cards
     // Intent: Provide clear error message when authentication fails
     // If auth expired, this will fail fast with clear message instead of timeout
-    const signInError = this.page.locator('text=Sign In Required');
+    const signInError = this.page.getByTestId('chat-auth-required');
     if (await signInError.isVisible({ timeout: 2000 }).catch(() => false)) {
       throw new Error(
         '❌ AUTHENTICATION REQUIRED\n\n' +

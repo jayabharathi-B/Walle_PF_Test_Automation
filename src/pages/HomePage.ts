@@ -38,31 +38,31 @@ export class HomePage extends BasePage {
     super(page);
 
     // ---------- Header / texts ----------
-    this.logo = page.getByAltText('Walle mascot').first();
+    this.logo = page.getByTestId('home-logo');
     this.welcomeText = page.getByTestId('page-title');
-    this.createAgentText = page.getByText('Create Your Agent');
-    this.exploreAgentsText = page.getByText('EXPLORE AGENTS');
+    this.createAgentText = page.getByTestId('home-create-agent-text');
+    this.exploreAgentsText = page.getByTestId('explore-agents-heading');
 
     // ---------- CTA buttons ----------
-    this.scanBestPerformersBtn = page.getByText('Scan Best Performers', { exact: true });
-    this.analyzeMarketSentimentBtn = page.getByText('Analyze Market Sentiment', { exact: true });
-    this.buildDefiStrategiesBtn = page.getByText('Build Defi Strategies', { exact: true });
-    this.deepAnalysisBtn = page.getByText('Deep analysis');
+    this.scanBestPerformersBtn = page.getByTestId('home-quick-action-scan');
+    this.analyzeMarketSentimentBtn = page.getByTestId('home-quick-action-analyze');
+    this.buildDefiStrategiesBtn = page.getByTestId('home-quick-action-build');
+    this.deepAnalysisBtn = page.getByTestId('home-deep-analysis-toggle');
 
     // ---------- Chain selector ----------
     this.chainDropdownTrigger = page.getByTestId('chain-dropdown-button');
-    this.chainDropdownMenu = page.locator('div.absolute.top-full.left-0');
+    this.chainDropdownMenu = page.getByTestId('chain-grid');
 
     // ---------- Scan input ----------
     this.scanInput = page.getByTestId('chat-input');
-    this.exampleContainer = page.locator('.example-questions-container');
-    this.popup = page.locator('.example-popup-container');
+    this.exampleContainer = page.getByTestId('home-example-container');
+    this.popup = page.getByTestId('home-example-popup');
 
     // ---------- Wallet ----------
     // HEALER FIX (2026-01-22): Placeholder text changed; use role+name regex for stability
-    this.walletInput = page.getByRole('textbox', { name: /enter wallet address or domain/i });
-    this.searchButton = page.getByRole('button', { name: 'Search' });
-    this.inlineError = page.locator('p.text-red-400');
+    this.walletInput = page.getByTestId('home-wallet-input');
+    this.searchButton = page.getByTestId('home-search-button');
+    this.inlineError = page.getByTestId('home-inline-error');
 
     // ---------- Connect wallet ----------
     this.connectWalletHeaderBtn = page.getByTestId('main-header-connect-wallet-btn');
@@ -71,8 +71,6 @@ export class HomePage extends BasePage {
     this.loginWithXBtn = page.getByRole('button', { name: 'Login with x' });
 
     // ---------- Signup ----------
-    // HEALER FIX: Original regex was overly strict with escaped parentheses
-    // Simplified to flexible case-insensitive pattern
     this.signupPrompt = page.getByText(/signup.*signin to continue/i);
 
     // ---------- Page Objects ----------
@@ -86,7 +84,7 @@ export class HomePage extends BasePage {
 
   // ---------- Example actions ----------
   plusButton(index = 0): Locator {
-    return this.exampleContainer.locator('button').nth(index);
+    return this.page.getByTestId('home-example-toggle');
   }
 
   async clickPlus(index = 0) {
@@ -95,13 +93,12 @@ export class HomePage extends BasePage {
 
   // ---------- Chain helpers ----------
   getChainOption(chain: string): Locator {
-    // HEALER FIX: Original locator used unstable parent selector (..)
-    // Changed to select button directly for better stability
-    return this.page.locator('button').filter({ hasText: chain }).first();
+    // HEALER FIX: Use data-testid pattern for chain options
+    return this.page.locator('[data-testid^="chain-option-"]').filter({ hasText: chain }).first();
   }
 
   getSelectedChain(chain: string): Locator {
-    return this.page.locator('button span', { hasText: chain });
+    return this.page.getByTestId('chain-dropdown-button').locator('span').filter({ hasText: chain });
   }
 
   async selectChain(chain: string) {
@@ -135,13 +132,12 @@ export class HomePage extends BasePage {
   }
 
   getNavTooltip(buttonName: string): Locator {
-    return this.page.locator(`div.pointer-events-none:has-text("${buttonName}")`);
+    return this.page.locator('[data-testid^="sidebar-tooltip-"]').filter({ hasText: buttonName });
   }
 
   async hoverNavButtonGroup(buttonName: string) {
-    const btn = this.getNavButton(buttonName);
-    const group = btn.locator('..');
-    await group.hover();
+    const btn = this.page.locator('[data-testid^="sidebar-nav-item-"]').filter({ hasText: buttonName });
+    await btn.hover();
   }
 
   async moveMouseAway() {

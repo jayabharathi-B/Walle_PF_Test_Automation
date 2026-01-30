@@ -93,23 +93,23 @@ export class AgentCreationFlow extends BasePage {
     this.polygonOption = page.getByRole('button', { name: 'POLYGON Polygon' });
 
     // ---------- Agent Genesis Modal (SCOUTED - confirmed) ----------
-    this.agentGenesisModal = page.locator('div').filter({ has: page.getByRole('heading', { name: 'AGENT GENESIS' }) });
-    this.agentGenesisHeading = page.getByRole('heading', { name: 'AGENT GENESIS' });
-    this.agentGenesisCloseButton = page.getByRole('button', { name: 'Close' });
-    this.walletEvolvingHeading = page.getByRole('heading', { name: 'WALLET EVOLVING INTO AN AGENT' });
+    this.agentGenesisModal = page.getByTestId('agent-genesis-modal');
+    this.agentGenesisHeading = page.getByTestId('agent-genesis-modal').getByRole('heading', { name: 'AGENT GENESIS' });
+    this.agentGenesisCloseButton = page.getByTestId('agent-genesis-modal').getByRole('button', { name: 'Close' });
+    this.walletEvolvingHeading = page.getByTestId('agent-genesis-modal').getByRole('heading', { name: 'WALLET EVOLVING INTO AN AGENT' });
 
     // ---------- Agent Genesis Steps (SCOUTED - confirmed) ----------
-    this.step1ScanningWallet = page.getByText('Step 1: Scanning Your Wallet');
-    this.step2ShapingOutlook = page.getByText("Step 2: Shaping Agent's Outlook");
-    this.step3UnderstandingPortfolio = page.getByText('Step 3: Understanding Your Portfolio');
-    this.step4DefiningCharacter = page.getByText('Step 4: Defining Agent Character');
-    this.step5TrainingIntelligence = page.getByText('Step 5: Training Intelligence');
-    this.step6BringingToLife = page.getByText('Step 6: Bringing It to Life');
+    this.step1ScanningWallet = page.getByTestId('agent-creation-step-1');
+    this.step2ShapingOutlook = page.getByTestId('agent-creation-step-2');
+    this.step3UnderstandingPortfolio = page.getByTestId('agent-creation-step-3');
+    this.step4DefiningCharacter = page.getByTestId('agent-creation-step-4');
+    this.step5TrainingIntelligence = page.getByTestId('agent-creation-step-5');
+    this.step6BringingToLife = page.getByTestId('agent-creation-step-6');
 
     // ---------- Personalize Agent Modal (needs scouting with auth) ----------
     // HEALER FIX (2026-01-21): Personalization modal is a fixed positioned div with z-50, scoped to the overlay
     // Terminal verification: npx playwright test tests/after/AgentCreationFlow.spec.ts → exit code 0 ✅
-    this.personalizeModal = page.locator('div.fixed.inset-0.z-50').filter({ has: page.getByRole('heading', { name: 'Personalize Your Agent Appearance' }) });
+    this.personalizeModal = page.getByTestId('style-selection-modal');
     // DISCOVERY (2026-01-21): New data-testid found for more reliable gender selection
     this.maleGenderButton = page.getByTestId('gender-option-male');
     this.femaleGenderButton = page.getByTestId('gender-option-female');
@@ -121,31 +121,29 @@ export class AgentCreationFlow extends BasePage {
 
     // ---------- Bot/Exchange Wallet Error Modal ----------
     // HEALER FIX (2026-01-21): Bot error modal is likely a generic modal wrapper with error content
-    this.botWalletErrorModal = page.locator('div').filter({ hasText: /Wallet Type Not Supported|bot.*wallet|exchange.*wallet/i }).first();
-    this.botWalletErrorHeading = page.locator('h2, h3').filter({ hasText: /Wallet Type Not Supported/i });
-    this.botWalletErrorMessage = page.getByText(/bot|exchange wallets/i);
-    this.botWalletErrorCloseButton = page.getByRole('button', { name: /close/i });
+    this.botWalletErrorModal = page.getByTestId('bot-wallet-error-modal');
+    this.botWalletErrorHeading = page.getByTestId('bot-wallet-error-heading');
+    this.botWalletErrorMessage = page.getByTestId('bot-wallet-error-message');
+    this.botWalletErrorCloseButton = this.botWalletErrorModal.getByRole('button', { name: /close/i });
 
     // ---------- Agent Already Exists Modal ----------
     // HEALER FIX (2026-01-21): Agent exists modal is a fixed div, not role="dialog"
-    this.agentExistsModal = page.locator('div.fixed.inset-0').filter({ hasText: /This agent already active|agent.*active/i });
-    this.agentExistsHeading = page.locator('h2, h3').filter({ hasText: /already active/i });
-    this.chatWithAgentButton = page.getByRole('button', { name: /chat with agent/i });
+    this.agentExistsModal = page.getByTestId('agent-exists-modal');
+    this.agentExistsHeading = page.getByTestId('existing-agent-heading');
+    this.chatWithAgentButton = this.agentExistsModal.getByRole('button', { name: /chat with agent/i });
 
     // ---------- Auth Gate Modal ----------
-    this.authGateModal = page.locator('div').filter({ hasText: /Signup \\(or\\) SignIn to Continue/i }).first();
-    this.authGateCloseButton = this.authGateModal.locator('button:has(img)').first();
+    this.authGateModal = page.getByTestId('auth-gate-modal');
+    this.authGateCloseButton = page.getByTestId('auth-gate-close');
 
     // ---------- Agent Preview Modal ----------
     // HEALER FIX (2026-01-21): Preview section is inside the main Agent Genesis modal, not a separate modal
     // The preview appears after the Agent Genesis steps complete
-    // HEALER FIX (2026-01-21): Refined locator to target the specific preview modal container with class w-full max-w-md
-    // to avoid strict mode violation when multiple divs contain the Preview heading
-    this.agentPreviewModal = page.locator('div.w-full.max-w-md.bg-\\[\\#28282833\\]');
+    this.agentPreviewModal = page.getByTestId('agent-preview-modal');
     // HEALER FIX (2026-01-21): Agent preview image is the "Agent" img in the preview section
-    this.agentPreviewImage = page.locator('img[alt="Agent"]').first();
+    this.agentPreviewImage = page.getByTestId('agent-preview-avatar');
     // HEALER FIX (2026-01-21): Agent preview name is in a generic div (not prefixed with @)
-    this.agentPreviewName = page.locator('div.w-full.max-w-md.bg-\\[\\#28282833\\]').locator('generic').nth(2); // Agent name div
+    this.agentPreviewName = page.getByTestId('agent-preview-name');
     // FIX (2026-01-21): Agent preview name element with data-testid for direct access
     this.agentPreviewNameElement = page.getByTestId('agent-preview-name');
     this.launchAgentButton = page.getByTestId('proceed-to-launch-btn');
@@ -154,27 +152,20 @@ export class AgentCreationFlow extends BasePage {
 
     // ---------- Discount Code Modal ----------
     // FIX (2026-01-21): Don't rely on [role="dialog"] - look for modal by content instead
-    this.discountCodeModal = page
-  .getByRole('heading', { name: 'Ready to Launch Your Agent?' })
-  .locator('xpath=ancestor::div[@data-testid="launch-confirmation-modal-content"]');
+    this.discountCodeModal = page.getByTestId('launch-confirmation-modal-content');
 
     //this.discountCodeInput = page.locator('input[placeholder*="discount"], input[placeholder*="code"], input[placeholder*="promo"]');
     this.launchWithDiscountButton = page.getByTestId('launch-confirmation-modal-confirm-btn');
 
     // ---------- Agent Created Confirmation Modal ----------
-    // HEALER FIX (2026-01-21): Agent created modal has data-testid="launch-confirmation-modal"
-    this.agentCreatedModal = page
-  .getByRole('heading', { name: 'Agent Launched Successfully!' })
-  .locator('xpath=ancestor::div[contains(@class,"fixed") and contains(@class,"inset-0")]');
+    // HEALER FIX (2026-01-29): Modal doesn't have data-testid="agent-created-modal" wrapper
+    // Instead, locate modal by its heading content and navigate to parent container
+    this.agentCreatedHeading = page.getByRole('heading', { name: 'Agent Launched Successfully!' });
+    // The modal is the container that holds the heading - use locator chaining
+    this.agentCreatedModal = page.locator('div').filter({ has: this.agentCreatedHeading }).first();
 
-    this.agentCreatedHeading = page.getByRole('heading', {
-  name: 'Agent Launched Successfully!',
-});
-
-    // HEALER FIX (2026-01-21): Button in confirmation modal - "LAUNCH AGENT" or "CHAT WITH AGENT"
-    this.chatWithCreatedAgentButton = page.getByRole('button', {
-  name: 'CHAT WITH AGENT',
-});
+    // HEALER FIX (2026-01-29): Button in confirmation modal - locate by role near the heading
+    this.chatWithCreatedAgentButton = page.getByRole('button', { name: 'CHAT WITH AGENT' });
 
   }
 
@@ -366,7 +357,8 @@ export class AgentCreationFlow extends BasePage {
 
   // ---------- Agent Created Confirmation ----------
   async waitForAgentCreatedConfirmation(timeout: number = 30000) {
-    await this.agentCreatedModal.waitFor({ state: 'visible', timeout });
+    // HEALER FIX (2026-01-29): Wait for the heading to be visible since modal doesn't have testid
+    await this.agentCreatedHeading.waitFor({ state: 'visible', timeout });
   }
 
  
@@ -411,7 +403,7 @@ export class AgentCreationFlow extends BasePage {
   }
 
   async closeAnyOpenModal() {
-    // FIX (2026-01-21): Don't rely on [role="dialog"] - use Escape and look for close buttons directly
+    // FIX (2026-01-21): Use data-testid patterns where available, fall back to role-based selectors
     // Try pressing Escape multiple times to close any visible modals
     const overlays = this.page.locator('div.fixed.inset-0, div[class*="modal"], div[class*="overlay"], [role="dialog"]');
     for (let i = 0; i < 3; i++) {

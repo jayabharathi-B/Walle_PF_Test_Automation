@@ -37,62 +37,52 @@ export class StrategyBuilderPanel extends BasePage {
     super(page);
 
     this.generateStrategyButton = page.getByRole('button', { name: /generate strategy/i });
-    this.strategyDialog = page.getByRole('dialog', { name: /strategy visualization/i }).or(page.locator('dialog'));
+    this.strategyDialog = page.getByTestId('strategy-panel');
     this.diagramHeading = page.getByRole('heading', { name: /strategy diagram/i });
-    this.nodeCountText = page.getByText(/\d+\s*configuration\s*nodes/i);
-    this.backtestButton = page.getByRole('button', { name: /^backtest$/i });
+    this.nodeCountText = page.getByTestId('strategy-node-count');
+    // HEALER FIX (2026-01-30): Button renamed from "Backtest" to "Simulate"
+    this.backtestButton = page.getByRole('button', { name: /^simulate$/i });
     this.executeButton = page.getByRole('button', { name: /execute/i });
     this.fullscreenButton = page.getByRole('button', { name: /fullscreen/i });
     this.closePanelButton = page.getByRole('button', { name: /close panel/i });
-    this.strategyErrorText = page.getByText(/strategy failed|generation failed|error generating|unable to generate/i);
-    this.diagramErrorText = page.getByText(/diagram failed|failed to load|error loading|no nodes/i);
+    this.strategyErrorText = page.getByTestId('strategy-generation-error-message');
+    this.diagramErrorText = page.getByTestId('strategy-generation-error-message');
 
     this.backtestHeading = page.getByRole('heading', { name: /strategy backtest/i });
-    this.backtestContainer = this.backtestHeading.locator('..').locator('..');
-    this.backtestDialogFallback = page.getByRole('dialog').filter({
-      hasText: /backtest|initial amount|timeframe|initial capital/i,
-    });
-    this.backtestPanelFallback = page.getByText(/initial amount|initial capital/i);
-    this.backtestErrorText = page.getByText(
-      /backtest failed|test failed|error running|failed to run|unable to complete/i
-    );
+    this.backtestContainer = page.getByTestId('strategy-panel');
+    this.backtestDialogFallback = page.getByTestId('strategy-backtest-modal');
+    this.backtestPanelFallback = page.getByTestId('strategy-panel');
+    this.backtestErrorText = page.getByTestId('backtest-error-message');
 
     this.resultsPanel = this.strategyDialog;
-    this.resultsTablist = this.resultsPanel.getByRole('tablist', { name: /backtest results/i });
-    this.summaryTab = this.resultsPanel.getByRole('tab', { name: /summary/i });
-    this.tableTab = this.resultsPanel.getByRole('tab', { name: /table/i });
-    this.chartTab = this.resultsPanel.getByRole('tab', { name: /chart/i });
-    this.summaryContent = this.resultsPanel.getByText(
-      /backtest period|total return|profit|loss|roi|sharpe|drawdown|win rate/i
-    );
-    this.roiPercent = this.resultsPanel.getByText(/total return/i).locator('..').getByText(/\d+(\.\d+)?%/);
-    this.resultsTable = this.resultsPanel.locator('table, [role="table"], [class*="table"]');
-    this.chartContainer = this.resultsPanel.locator(
-      'canvas, svg[class*="chart"], [class*="chart"], [data-testid*="chart"]'
-    );
-    this.tradeHistoryText = this.resultsPanel.getByText(/trade history|trades executed/i);
+    this.resultsTablist = page.getByTestId('backtest-results-tabs');
+    this.summaryTab = page.getByTestId('backtest-results-tab-summary');
+    this.tableTab = page.getByTestId('backtest-results-tab-table');
+    this.chartTab = page.getByTestId('backtest-results-tab-chart');
+    this.summaryContent = page.getByTestId('backtest-summary-title');
+    this.roiPercent = page.getByTestId('backtest-total-return');
+    this.resultsTable = page.getByTestId('strategy-panel').locator('table, [role="table"]');
+    this.chartContainer = page.getByTestId('strategy-panel').locator('canvas, svg');
+    this.tradeHistoryText = page.getByTestId('backtest-trade-history-heading');
   }
 
+  // HEALER FIX (2026-01-30): Updated selectors for new Simulation modal UI
+  // Root cause: Modal was redesigned - testids no longer exist
+  // Resolution: Use label/role-based selectors instead
   getInitialCapitalInput(): Locator {
-    return this.backtestContainer
-      .getByText(/initial amount|initial capital/i)
-      .locator('..')
-      .getByRole('textbox')
-      .or(this.backtestContainer.getByRole('spinbutton'))
-      .or(this.backtestContainer.locator('input[type="number"], input[type="text"]'))
-      .or(this.backtestContainer.getByPlaceholder(/amount|initial|\$/i));
+    // The textbox is labeled "Initial Capital" and contains currency value
+    return this.page.getByRole('textbox', { name: /initial capital/i }).or(
+      this.page.locator('input[type="text"]').filter({ hasText: /1,?000/ })
+    );
   }
 
   getTimeframeControl(): Locator {
-    return this.backtestContainer
-      .getByRole('combobox')
-      .or(this.backtestContainer.locator('select'))
-      .or(this.backtestContainer.getByText(/timeframe|period|duration/i).locator('..').locator('button, select, [role="combobox"]'));
+    // The combobox is for "Backtest Period"
+    return this.page.getByRole('combobox').filter({ has: this.page.locator('option:has-text("1 Month")') });
   }
 
   getInitiateBacktestButton(): Locator {
-    return this.backtestContainer
-      .getByRole('button', { name: /initiate backtest|start backtest|run backtest|begin/i })
-      .or(this.backtestContainer.getByRole('button').filter({ hasText: /initiate|start|run/i }));
+    // Button text is "INITIATE BACKTEST"
+    return this.page.getByRole('button', { name: /initiate backtest/i });
   }
 }

@@ -37,7 +37,7 @@ export class CreditsPage extends BasePage {
     this.pageHeading = page.getByTestId('page-title');
 
     // ---------- Balance Section ----------
-    this.balanceLabel = page.getByText('Your Balance');
+    this.balanceLabel = page.getByTestId('balance-label');
     this.balanceValue = page.getByTestId('balance-amount');
     this.refreshButton = page.getByTestId('balance-refresh-button');
 
@@ -53,10 +53,10 @@ export class CreditsPage extends BasePage {
     this.customAmountInput = page.getByTestId('custom-amount-input');
 
     // ---------- Order Summary ----------
-    this.orderSummaryHeading = page.getByText('Order Summary');
+    this.orderSummaryHeading = page.getByTestId('order-summary-heading');
     this.selectPackageMessage = page.getByTestId('summary-empty-state');
-    // Total amount value is sibling to "Total Amount Due" label
-    this.totalAmountDue = page.getByText('Total Amount Due').locator('..').getByText(/^\$\d/);
+    // Total amount value with data-testid
+    this.totalAmountDue = page.getByTestId('summary-total-amount');
 
     // ---------- Purchase Button ----------
     this.purchaseCreditsButton = page.getByRole('button', { name: /purchase credit/i });

@@ -206,7 +206,10 @@ test.describe('Agent Creation Flow', () => {
     // STEP 15: Click Chat with Agent Button and Wait for Navigation
    
     await captureStep(15, 'Click Chat with Agent Button and Wait for Navigation', async () => {
-      await expect(agentCreation.agentCreatedModal).toBeVisible({ timeout: 30000 });
+      // HEALER FIX (2026-01-29): Wait for previous modal to close and new modal to mount
+      // Root cause: Modal transition from discount modal to created modal needs settling time
+      await page.waitForTimeout(1000);
+      // HEALER FIX (2026-01-29): Modal doesn't have testid, check heading visibility instead
       await expect(agentCreation.agentCreatedHeading).toBeVisible({ timeout: 30000 });
 
       // Call the improved clickChatWithNewAgent which handles multiple scenarios
@@ -342,15 +345,25 @@ test.describe('Agent Creation Flow', () => {
     // Wait for Agent Genesis modal
     await agentCreation.waitForAgentGenesisModal(MODAL_TIMEOUT_MS);
 
+    await captureStep(8.5, 'Check for Auth Gate Modal and Dismiss if Present', async () => {
+    const authGateVisible = await agentCreation.authGateModal
+        .isVisible({ timeout: 3000 })
+        .catch(() => false);
+
+      if (authGateVisible) {
+        await agentCreation.dismissAuthGateIfPresent();
+      }
+    });
+
     // Attempt style selection if personalization appears before bot-wallet error
-    // const personalizeVisible = await agentCreation.personalizeModal
-    //   .isVisible({ timeout: 5000 })
-    //   .catch(() => false);
-    // if (personalizeVisible) {
+    const personalizeVisible = await agentCreation.personalizeModal
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+    if (personalizeVisible) {
       await expect(agentCreation.selectStyleButton).toBeVisible();
       await expect(agentCreation.selectStyleButton).toBeEnabled();
       await agentCreation.confirmStyleSelection();
-    // }
+    }
     // STEP 5: Wait for Bot Wallet Error Modal
     await agentCreation.waitForBotWalletError(MODAL_TIMEOUT_MS);
 

@@ -11,12 +11,9 @@ export class ExplorePage extends BasePage {
     super(page);
 
     this.agentLinks = page.locator('a[href^="/agents/"]');
-    this.agentCards = page.locator('[data-name="Agent Chat/Initial Screen"]');
-    this.agentNameLinks = page.locator('a[href^="/agents/"]');
-    this.tabs = page.getByRole('button', {
-      name: /Most Engaged|Recently Created|Top PnL|Most Followed|Top Score/,
-      includeHidden: true,
-    });
+    this.agentCards = page.locator('[data-testid^="agent-card-"]');
+    this.agentNameLinks = page.locator('[data-testid^="agent-card-link-"]');
+    this.tabs = page.locator('[data-testid^="explore-agents-tab-"]');
   }
 
   async waitForAgentsToLoad() {
@@ -75,8 +72,12 @@ export class ExplorePage extends BasePage {
       throw new Error(`Agent name not found at index ${index} - textContent() returned null or empty string`);
     }
 
+    // HEALER FIX (2026-01-29): Cards are duplicated in DOM, map to actual card index
+    // Map logical index to actual card index: 0->0, 1->2, 2->4, etc.
+    const actualCardIndex = index * 2;
+
     const chatClickTarget = this.agentCards
-      .nth(index)
+      .nth(actualCardIndex)
       .locator('div')
       .filter({ has: this.page.locator('img[data-nimg]') })
       .first();
@@ -97,13 +98,12 @@ export class ExplorePage extends BasePage {
     await this.agentCards.first().waitFor({ state: 'visible', timeout: 15000 });
     await this.agentNameLinks.first().waitFor({ state: 'visible', timeout: 15000 });
 
-    const cardCount = await this.agentCards.count();
+    // HEALER FIX (2026-01-29): Cards are duplicated in DOM, only even indices have content
+    // Use nameCount directly as it represents actual unique agents
     const nameCount = await this.agentNameLinks.count();
 
-    const index = Math.min(
-      Math.floor(Math.random() * cardCount),
-      nameCount - 1
-    );
+    // Pick a random agent from the available names (0 to nameCount-1)
+    const index = Math.floor(Math.random() * nameCount);
 
     return await this.clickAgentChatCard(index);
   }
@@ -142,7 +142,10 @@ export class ExplorePage extends BasePage {
   getCheckboxAt(index: number): Locator {
     // HEALER FIX: Removed pressed filter - aria-pressed state changes with selection
     // Now returns any button in the agent card (the checkbox button)
-    return this.agentCards.nth(index).getByRole('button').first();
+    // HEALER FIX (2026-01-29): Cards are duplicated in DOM, buttons only on even indices
+    // Map logical index to actual card index: 0->0, 1->2, 2->4, etc.
+    const actualIndex = index * 2;
+    return this.agentCards.nth(actualIndex).getByRole('button').first();
   }
 
   getSelectedAgentsBar(): Locator {
