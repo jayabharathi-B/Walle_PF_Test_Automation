@@ -43,7 +43,17 @@
       "Bash(node -e \"const fs = require\\('fs'\\); const auth = JSON.parse\\(fs.readFileSync\\('auth/google.json', 'utf8'\\)\\); console.log\\(JSON.stringify\\(auth\\)\\);\" > temp_auth.json:*)",
       "mcp__playwright__browser_wait_for",
       "mcp__playwright__browser_snapshot",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "mcp__playwright__browser_run_code",
+      "Bash(lsof:*)",
+      "Bash(netstat:*)",
+      "mcp__playwright__browser_install",
+      "Bash(xargs cat:*)",
+      "Bash(timeout 180 powershell:*)"
+    ],
+    "additionalDirectories": [
+      "d:\\Walle-CF\\AutomationProjects\\Walle\\tests\\after",
+      "d:\\Walle-CF\\AutomationProjects\\Walle\\tests\\before"
     ]
   }
 }

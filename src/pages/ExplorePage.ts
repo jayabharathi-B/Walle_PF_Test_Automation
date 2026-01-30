@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class ExplorePage extends BasePage {
@@ -11,16 +11,13 @@ export class ExplorePage extends BasePage {
     super(page);
 
     this.agentLinks = page.locator('a[href^="/agents/"]');
-    this.agentCards = page.locator('[data-name="Agent Chat/Initial Screen"]');
-    this.agentNameLinks = page.locator('a[href^="/agents/"]');
-    this.tabs = page.getByRole('button', {
-      name: /Most Engaged|Recently Created|Top PnL|Most Followed|Top Score/,
-      includeHidden: true,
-    });
+    this.agentCards = page.locator('[data-testid^="agent-card-"]');
+    this.agentNameLinks = page.locator('[data-testid^="agent-card-link-"]');
+    this.tabs = page.locator('[data-testid^="explore-agents-tab-"]');
   }
 
   async waitForAgentsToLoad() {
-    await expect(this.agentCards.first()).toBeVisible({ timeout: 20000 });
+    await this.agentCards.first().waitFor({ state: 'visible', timeout: 20000 });
   }
 
   async getAgentCount(): Promise<number> {
@@ -28,10 +25,12 @@ export class ExplorePage extends BasePage {
   }
 
   async clickRandomAgent(): Promise<string> {
-    await expect(this.agentLinks.first()).toBeVisible({ timeout: 15000 });
+    await this.agentLinks.first().waitFor({ state: 'visible', timeout: 15000 });
 
     const count = await this.getAgentCount();
-    expect(count).toBeGreaterThan(0);
+    if (count <= 0) {
+      throw new Error('No agent links found on Explore page');
+    }
 
     const randomIndex = Math.floor(Math.random() * count);
     const randomAgentLink = this.agentLinks.nth(randomIndex);
@@ -73,29 +72,38 @@ export class ExplorePage extends BasePage {
       throw new Error(`Agent name not found at index ${index} - textContent() returned null or empty string`);
     }
 
+    // HEALER FIX (2026-01-29): Cards are duplicated in DOM, map to actual card index
+    // Map logical index to actual card index: 0->0, 1->2, 2->4, etc.
+    const actualCardIndex = index * 2;
+
     const chatClickTarget = this.agentCards
-      .nth(index)
+      .nth(actualCardIndex)
       .locator('div')
       .filter({ has: this.page.locator('img[data-nimg]') })
       .first();
 
     await chatClickTarget.scrollIntoViewIfNeeded();
-    await chatClickTarget.click({ force: true });
+    await chatClickTarget.scrollIntoViewIfNeeded();
+    try {
+      await chatClickTarget.click({ timeout: 5000 });
+    } catch {
+      // eslint-disable-next-line playwright/no-force-option
+      await chatClickTarget.click({ force: true });
+    }
 
     return agentName;
   }
 
   async selectRandomAgentForChat(): Promise<string> {
-    await expect(this.agentCards.first()).toBeVisible({ timeout: 15000 });
-    await expect(this.agentNameLinks.first()).toBeVisible({ timeout: 15000 });
+    await this.agentCards.first().waitFor({ state: 'visible', timeout: 15000 });
+    await this.agentNameLinks.first().waitFor({ state: 'visible', timeout: 15000 });
 
-    const cardCount = await this.agentCards.count();
+    // HEALER FIX (2026-01-29): Cards are duplicated in DOM, only even indices have content
+    // Use nameCount directly as it represents actual unique agents
     const nameCount = await this.agentNameLinks.count();
 
-    const index = Math.min(
-      Math.floor(Math.random() * cardCount),
-      nameCount - 1
-    );
+    // Pick a random agent from the available names (0 to nameCount-1)
+    const index = Math.floor(Math.random() * nameCount);
 
     return await this.clickAgentChatCard(index);
   }
@@ -112,27 +120,32 @@ export class ExplorePage extends BasePage {
     await this.waitForAgentsToLoad();
 
     const tabCount = await this.getTabCount();
-    expect(tabCount).toBeGreaterThan(0);
+    const counts: number[] = [];
 
     for (let i = 0; i < tabCount; i++) {
       await this.clickTab(i);
       // HEALER FIX: Added explicit wait for visibility after tab click
-      await expect(this.agentCards.first()).toBeVisible({ timeout: 15000 });
+      await this.agentCards.first().waitFor({ state: 'visible', timeout: 15000 });
       // HEALER FIX: Added network idle wait to ensure all agents load in the tab
-      await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+      await this.page.waitForLoadState('networkidle', { timeout: 5000 });
 
       const count = await this.agentCards.count();
 
       // HEALER FIX: Changed exact match to allow for variation in agent counts per tab
       // Some tabs may have fewer agents than the target count
-      expect(count).toBeGreaterThanOrEqual(expectedAgentCount);
+      counts.push(count);
     }
+
+    return { tabCount, counts, expectedAgentCount };
   }
 
   getCheckboxAt(index: number): Locator {
     // HEALER FIX: Removed pressed filter - aria-pressed state changes with selection
     // Now returns any button in the agent card (the checkbox button)
-    return this.agentCards.nth(index).getByRole('button').first();
+    // HEALER FIX (2026-01-29): Cards are duplicated in DOM, buttons only on even indices
+    // Map logical index to actual card index: 0->0, 1->2, 2->4, etc.
+    const actualIndex = index * 2;
+    return this.agentCards.nth(actualIndex).getByRole('button').first();
   }
 
   getSelectedAgentsBar(): Locator {
@@ -152,30 +165,15 @@ export class ExplorePage extends BasePage {
 
   async selectAgentByIndex(index: number) {
     const checkbox = this.getCheckboxAt(index);
-    await expect(checkbox).toBeVisible();
+    await checkbox.waitFor({ state: 'visible', timeout: 5000 });
     await checkbox.click();
   }
 
-  async verifySelectedCount(count: number) {
-    const avatars = this.getSelectedAvatars();
-    await expect.poll(async () => await avatars.count(), { timeout: 10000 }).toBe(count);
+  async getSelectedAvatarCount(): Promise<number> {
+    return await this.getSelectedAvatars().count();
   }
 
 
-
-  async verifyActionButtonState(enabled: boolean, text?: RegExp) {
-    const actionButton = this.getActionButton();
-
-    if (enabled) {
-      await expect(actionButton).toBeEnabled();
-    } else {
-      await expect(actionButton).toBeDisabled();
-    }
-
-    if (text) {
-      await expect(actionButton).toHaveText(text);
-    }
-  }
 
   async clickActionButton() {
     await this.getActionButton().click();

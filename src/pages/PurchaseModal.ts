@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class PurchaseModal extends BasePage {
@@ -6,6 +6,7 @@ export class PurchaseModal extends BasePage {
   readonly modal: Locator;
   readonly modalHeading: Locator;
   readonly closeButton: Locator;
+  readonly createAccountButton: Locator;
 
   // ---------- Tabs ----------
   readonly externalDepositTab: Locator;
@@ -39,21 +40,22 @@ export class PurchaseModal extends BasePage {
     super(page);
 
     // ---------- Modal Container ----------
-    this.modal = page.getByText(/setup a deposit account|fund your deposit account/i).locator('../..');
-    this.modalHeading = page.locator('text=/setup a deposit account|fund your deposit account/i');
+    this.modal = page.getByTestId('deposit-setup-modal').or(page.getByTestId('funding-modal'));
+    this.modalHeading = page.getByTestId('funding-modal-heading').or(page.getByTestId('deposit-setup-heading'));
     this.closeButton = page.getByTestId('funding-modal-close');
+    this.createAccountButton = page.getByRole('button', { name: /create account/i });
 
     // ---------- Tabs ----------
     this.externalDepositTab = page.getByTestId('external-deposit-tab');
     this.transferTab = page.getByTestId('transfer-tab');
 
     // ---------- External Deposit Tab Content ----------
-    this.depositAddressLabel = page.getByText(/deposit address.*base chain/i);
-    this.depositAddressValue = this.modal.locator('input[readonly]').first();
+    this.depositAddressLabel = page.getByTestId('deposit-address-label');
+    this.depositAddressValue = page.getByTestId('deposit-address-input');
     this.copyAddressButton = page.getByTestId('copy-address-button');
 
-    this.currentBalanceHeading = page.getByText('Current Balance');
-    this.usdcBalanceLabel = page.getByText('USDC Balance');
+    this.currentBalanceHeading = page.getByTestId('balance-label');
+    this.usdcBalanceLabel = page.getByTestId('balance-label');
     this.usdcBalanceValue = page.getByTestId('usdc-balance-amount');
     this.refreshBalanceButton = page.getByTestId('external-balance-refresh-button');
 
@@ -63,35 +65,38 @@ export class PurchaseModal extends BasePage {
     this.haveTheFundsButton = page.getByTestId('i-have-funds-button');
     this.buyViaThirdwebButton = page.getByTestId('buy-thirdweb-button');
 
-    // ---------- Transfer Tab Content (PLACEHOLDERS) ----------
-    // TODO: Scout these elements when Transfer tab is clicked
-    // These are placeholder locators based on expected patterns
-    this.transferFromLabel = this.modal.getByText(/^from$/i);
-    this.transferToLabel = this.modal.getByText(/^to$/i);
-    this.transferAmountInput = this.modal.locator('input[type="number"]');
-    this.transferButton = this.modal.getByRole('button', { name: /^transfer$/i });
+    // ---------- Transfer Tab Content ----------
+    this.transferFromLabel = page.getByTestId('transfer-from-label');
+    this.transferToLabel = page.getByTestId('transfer-to-label');
+    this.transferAmountInput = page.getByTestId('transfer-amount-input');
+    this.transferButton = page.getByTestId('transfer-button');
   }
 
   // ---------- Modal Actions ----------
   async waitForModal() {
-    await expect(this.modal).toBeVisible({ timeout: 5000 });
+    await this.modal.waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  async isSetupRequired(): Promise<boolean> {
+    const headingText = await this.modalHeading.textContent();
+    return headingText?.toLowerCase().includes('setup') ?? false;
   }
 
   async close() {
     await this.closeButton.click();
-    await expect(this.modal).toBeHidden({ timeout: 5000 });
+    await this.modal.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- Tab Actions ----------
   async clickExternalDepositTab() {
     await this.externalDepositTab.click();
-    await expect(this.depositAddressLabel).toBeVisible();
+    await this.depositAddressLabel.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async clickTransferTab() {
     await this.transferTab.click();
-    // TODO: Add proper wait for Transfer tab content after scouting
-    await this.page.waitForTimeout(500);
+    // Wait for tab content transition
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   // ---------- External Deposit Actions ----------
@@ -131,7 +136,7 @@ export class PurchaseModal extends BasePage {
 
   // ---------- Helpers ----------
   async isErrorMessageVisible(): Promise<boolean> {
-    return await this.insufficientBalanceMessage.isVisible().catch(() => false);
+    return await this.insufficientBalanceMessage.isVisible();
   }
 
   async getErrorMessage(): Promise<string> {

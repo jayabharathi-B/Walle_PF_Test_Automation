@@ -1,9 +1,11 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-// Use authentication storage state from Google login
-test.use({
-  storageState: 'auth/google.json',
-});
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Note: storageState is configured in playwright.config.ts for authenticated-tests project
 
 // ----------------------------------------------------
 // Tests the ENTIRE credits journey in one flow
@@ -28,10 +30,9 @@ test.describe('Credits Flow - Complete Journey', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Wait for authenticated state to load (credits button or wallet button visible)
-    const creditsButton = page.getByTestId('credits-button');
+    const creditsButton = authenticatedHeader.creditsButton;
     await expect(creditsButton).toBeVisible({ timeout: 15000 });
 
-    console.log('⏳ Waiting for deposit account initialization (30 seconds)...');
     // IMPORTANT: Wait for deposit account to be fully initialized after login
     // Without this wait, clicking "Purchase Credits" will show "Setup a Deposit Account" screen
     //await page.waitForTimeout(30000);
@@ -52,8 +53,7 @@ test.describe('Credits Flow - Complete Journey', () => {
     // ----------------------------------------------------
     await creditsPage.clickRefresh();
 
-    // Wait for balance to refresh
-    await page.waitForTimeout(2000);
+    await creditsPage.balanceValue.waitFor({ state: 'visible', timeout: 5000 });
 
     // Verify balance value is still visible after refresh
     await expect(creditsPage.balanceValue).toBeVisible();
@@ -103,13 +103,9 @@ test.describe('Credits Flow - Complete Journey', () => {
     await expect(purchaseModal.modalHeading).toBeVisible();
 
     // If "Setup a Deposit Account" appears, ThirdWeb integration is required
-    const headingText = await purchaseModal.modalHeading.textContent();
-    if (headingText?.includes('Setup')) {
-      const createAccountBtn = page.getByRole('button', { name: /create account/i });
-      await expect(createAccountBtn).toBeVisible();
-      console.log('🚫 Deposit account requires ThirdWeb - cannot be automated in Playwright');
-      console.log('✅ Test coverage: Navigation, balance, packages, custom amount, order summary, modal detection');
-      console.log('🔴 Not testable: External deposit flow, transfer tab (ThirdWeb integration required)');
+    const setupRequired = await purchaseModal.isSetupRequired();
+    if (setupRequired) {
+      await expect(purchaseModal.createAccountButton).toBeVisible();
       // Test passed with maximum automated coverage given ThirdWeb limitation
       return;
     }
@@ -141,7 +137,7 @@ test.describe('Credits Flow - Complete Journey', () => {
 
     // Click refresh in modal → assert toast
     await purchaseModal.clickRefreshBalance();
-    await page.waitForTimeout(1000); // Wait for refresh
+    await purchaseModal.usdcBalanceValue.waitFor({ state: 'visible', timeout: 5000 });
     // Note: Toast may reappear with same message
 
     // Verify error messages (insufficient balance)
@@ -166,8 +162,7 @@ test.describe('Credits Flow - Complete Journey', () => {
     // - To address field
     // - Amount input field
     // - Transfer button
-    console.log('🔴 Transfer tab: Elements not scouted - skipping assertions');
-    await page.waitForTimeout(1000);
+    await expect(purchaseModal.transferTab).toBeVisible();
 
     // ----------------------------------------------------
     // Step 8: Close Modal
@@ -187,7 +182,8 @@ test.describe('Credits Flow - Complete Journey', () => {
     await home.goHome();
 
     // Verify navigation to home URL
-    await expect(page).toHaveURL(/^https:\/\/aistg\.walle\.xyz\/?$/);
+    const baseUrl = (process.env.BASE_URL || 'https://aistg.walle.xyz').replace(/\/$/, '');
+    await expect(page).toHaveURL(new RegExp(`^${escapeRegExp(baseUrl)}/?$`));
 
     // Verify "Welcome" heading
     await expect(home.welcomeText).toBeVisible();

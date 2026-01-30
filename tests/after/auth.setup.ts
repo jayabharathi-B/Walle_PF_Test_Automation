@@ -1,14 +1,18 @@
+/* eslint-disable no-console */
 import { test as setup } from '@playwright/test';
 import { refreshAuthTokensViaBrowser } from '../utils/token-refresh';
 
 setup('Refresh authentication tokens', async ({ browser }) => {
-  console.log('Refreshing authentication tokens for authenticated tests...');
+  console.log('auth refresh: start');
 
   try {
     await refreshAuthTokensViaBrowser(browser);
-    console.log('✓ Tokens refreshed successfully');
+    console.log('auth refresh: complete');
   } catch (error) {
-    console.error('✗ Failed to refresh tokens:', (error as Error).message);
+    console.error(
+      'auth refresh: failed; authenticated tests will be skipped:',
+      (error as Error).message
+    );
     throw error; // Fail fast - stop authenticated tests
   }
 });

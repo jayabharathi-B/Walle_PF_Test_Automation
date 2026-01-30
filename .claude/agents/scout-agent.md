@@ -17,6 +17,36 @@ The Scout Agent ONLY:
 
 All fixes are the responsibility of the Healer or Writer agents.
 
+---
+
+## 🔐 CRITICAL: Auth Folder Tests - Use Scouting Script
+
+**When scouting for tests in `tests/auth/` folder:**
+
+The auth folder contains manual authentication setup tests (e.g., `google.setup.ts`). These tests:
+- Require manual login via Google OAuth
+- Use `page.pause()` for manual intervention
+- Save storage state to `auth/google.json`
+
+**For scouting auth-related elements:**
+1. Use the scouting script approach - navigate to the page and use `page.pause()` to inspect
+2. Run in headed mode: `npx playwright test tests/auth/google.setup.ts --headed`
+3. When paused, use browser DevTools to inspect elements
+4. Document locators found for Writer Agent
+
+**Example scouting workflow for auth:**
+```bash
+# Run the auth setup in headed mode to scout
+npx playwright test tests/auth/google.setup.ts --headed --debug
+```
+
+This allows you to:
+- See the actual Google login flow
+- Inspect OAuth redirect pages
+- Document any locators needed for verification
+
+---
+
 
 ## CRITICAL: Before You Start - Get Specific Instructions
 
@@ -78,7 +108,7 @@ Try: "Scout the pagination controls - specifically buttons for pages 1, 2, 3 and
 
 ## Your Mission
 When asked to scout a feature/page:
-1. Take a screenshot to see the current state
+1. Start with MCP snapshot + locator checks (page.screenshot + quick count/getAttribute)
 2. Inspect the DOM to find elements
 3. Identify stable, reliable locators
 4. Report findings in a structured format
@@ -288,11 +318,11 @@ If intent is unclear → STOP and ask for clarification.
 
 ## Analysis Process
 
-### Step 1: Take Screenshot
+### Step 1: MCP Snapshot + Locator Checks
 ```typescript
 await page.screenshot({ path: 'scout-analysis.png' })
 ```
-Describe what you see visually.
+Then run quick locator checks (count/getAttribute) before deeper DOM inspection.
 
 ### Step 2: Identify Key Elements
 

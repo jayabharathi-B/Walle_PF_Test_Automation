@@ -71,6 +71,19 @@ export class AgentSelectionFlow extends BasePage {
     await this.quickSelect.waitForModalLoaded();
   }
 
+  async getFirstQuickSelectAgentName(): Promise<string> {
+    // HEALER FIX (2026-01-22) - VERIFIED IN ERROR CONTEXT:
+    // Root cause: Quick Select heading and agent buttons are siblings; ../.. scopes to header only.
+    // Resolution: Traverse one more level (../../..) to include the agent list container.
+    const firstCard = this.quickSelect.quickSelectSelectButtons.first();
+    const name = await firstCard
+      .locator('p')
+      .filter({ hasText: /@/ })
+      .first()
+      .textContent();
+    return name?.trim() || '';
+  }
+
   async closeQuickSelectModalWithAddToChat() {
     await this.quickSelect.closeWithAddToChat();
   }
@@ -156,8 +169,7 @@ export class AgentSelectionFlow extends BasePage {
     // Resolution: Navigate, wait for load, then close modals defensively
 
     await this.goto();
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-    await this.page.waitForTimeout(1000); // Brief wait for page stabilization
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 });
 
     await this.ensureNoModalOpen();
 
@@ -169,12 +181,12 @@ export class AgentSelectionFlow extends BasePage {
     // HEALER FIX (2026-01-12): More robust modal closing for serial mode
     // Press Escape multiple times to ensure all modals/overlays are dismissed
     for (let i = 0; i < 3; i++) {
-      await this.page.keyboard.press('Escape').catch(() => {});
+      await this.page.keyboard.press('Escape');
     }
 
     // Wait for dialogs and portal overlays to be hidden
-    await this.page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-    await this.page.locator('[data-portal="safe-portal"]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await this.page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5000 });
+    await this.page.locator('[data-portal="safe-portal"]').waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ========================================

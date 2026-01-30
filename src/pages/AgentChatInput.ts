@@ -17,12 +17,14 @@ export class AgentChatInput extends BasePage {
 
     // ---------- Homepage elements ----------
     this.addAgentsButton = page.getByTestId('add-agents-home');
-    this.chatInput = page.getByTestId('chat-input');
+    // HEALER FIX (2026-01-30): chat-input testid may not be present in all views
+    // Root cause: Agent chat view shows textbox without data-testid
+    // Resolution: Use role-based fallback selector (last textbox is usually the chat input)
+    this.chatInput = page.getByRole('textbox').last();
     this.sendButton = page.getByTestId('send-button');
 
     // ---------- Agent thumbnail container ----------
-    // TODO: Add data-testid="agent-thumbnail-container" to source code
-    this.agentThumbnailContainer = page.locator('.flex.items-center.gap').first();
+    this.agentThumbnailContainer = page.locator('[data-testid^="chat-selected-agent-"]');
   }
 
   // ---------- Navigation ----------
@@ -59,7 +61,7 @@ export class AgentChatInput extends BasePage {
    * Get agent thumbnail by agent name
    */
   getAgentThumbnail(agentName: string): Locator {
-    return this.page.locator(`img[alt="${agentName}"]`);
+    return this.page.locator('[data-testid^="chat-selected-agent-avatar-"]');
   }
 
   /**
@@ -67,11 +69,9 @@ export class AgentChatInput extends BasePage {
    */
   getRemoveAgentButton(agentName: string): Locator {
     // Find the remove button (×) next to the agent thumbnail
-    // HEALER FIX (2026-01-11): Navigate from agent image through parent hierarchy to sibling remove button
-    // DOM structure: img[alt="agent"] → parent div → parent div → sibling button:has-text("×")
+    // HEALER FIX (2026-01-11): Use data-testid pattern for reliable removal
     // Intent: Find the × button associated with a specific agent thumbnail
-    // TODO: Request data-testid="remove-agent-{agentName}" for stable selection
-    return this.page.locator(`img[alt="${agentName}"]`).locator('../..').locator('button:has-text("×")');
+    return this.page.locator('[data-testid^="remove-agent-"]');
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class ConnectModal extends BasePage {
@@ -25,11 +25,11 @@ export class ConnectModal extends BasePage {
   }
 
   async isVisible(): Promise<boolean> {
-    return await this.modal.isVisible().catch(() => false);
+    return await this.modal.isVisible();
   }
 
   async waitForModal() {
-    await expect(this.connectToContinueText).toBeVisible({ timeout: 10000 });
+    await this.connectToContinueText.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async clickConnectWallet() {
@@ -39,13 +39,13 @@ export class ConnectModal extends BasePage {
   async close() {
     if (await this.isVisible()) {
       await this.closeBtn.click();
-      await expect(this.modal).not.toBeAttached();
+      await this.modal.waitFor({ state: 'detached', timeout: 5000 });
     }
   }
 
   async closeIfVisible() {
     if (await this.connectToContinueText.count()) {
-      await expect(this.connectToContinueText).toBeVisible();
+      await this.connectToContinueText.waitFor({ state: 'visible', timeout: 5000 });
       await this.close();
     }
   }

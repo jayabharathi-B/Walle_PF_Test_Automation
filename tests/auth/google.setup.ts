@@ -7,7 +7,8 @@ import { test as setup } from '@playwright/test';
 //});
 
 setup('Google auth setup', async ({ page }) => {
-  await page.goto('https://aistg.walle.xyz/');
+  // Use BASE_URL from environment, fallback to staging
+  await page.goto(process.env.BASE_URL || 'https://aistg.walle.xyz/');
 
   // 3. ⛔ PAUSE the test here
   // You will manually complete Google login

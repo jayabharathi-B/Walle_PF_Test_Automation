@@ -45,12 +45,18 @@ Healer Agent stops here.
    - Add missing methods
    - Fix method logic
 
-2. **Test Files** (tests/*.spec.ts) - ONLY for these issues:
+2. **Test Files** - ONLY for these issues:
+   - `tests/before/*.spec.ts` - Unauthenticated tests
+   - `tests/after/*.spec.ts` - Authenticated tests (use `storageState: 'auth/google.json'`)
    - Wrong assertion values (expects 5, should be 3)
    - Incorrect nth() index
    - Wrong method parameters
    - Missing await keywords
    - Test logic bugs (described in Block 6)
+
+3. **Token Refresh Setup** (tests/after/auth.setup.ts)
+   - Only if token refresh logic needs fixing
+   - Uses `tests/utils/token-refresh.ts`
 
 **Forbidden modifications:**
 - Test intent/requirements
@@ -82,7 +88,7 @@ Fails? → Escalate to Full     Test in terminal → Report
 
 Before healing, **classify the issue** to choose the right approach:
 
-### ⚡ FAST-TRACK (Skip Inspector) - 80% of Cases
+### ⚡ FAST-TRACK (MCP-first) - 80% of Cases
 
 **Use when ALL of these are true:**
 - [ ] Error message explicitly shows the problem
@@ -91,14 +97,15 @@ Before healing, **classify the issue** to choose the right approach:
 - [ ] Low risk (page object method, not test logic)
 - [ ] You can confidently state: "I know exactly what's wrong"
 
-**Fast-Track Protocol:**
+**Fast-Track Protocol (MCP-first):**
 ```
 1. Read error output
-2. Apply standard Playwright fix
-3. Run test in terminal: npx playwright test [test]
-4. Verify exit code = 0
-5. Add basic HEALER FIX comment
-6. Report: ✅ "Fixed [issue], test passing"
+2. Open Playwright MCP (Inspector/UI/debug) and validate locator/condition
+3. Apply standard Playwright fix (only after MCP validation)
+4. Run test in terminal: npx playwright test [test]
+5. Verify exit code = 0
+6. Add basic HEALER FIX comment
+7. Report: ✅ "Fixed [issue], test passing"
 ```
 
 **Time budget:** 5 minutes max

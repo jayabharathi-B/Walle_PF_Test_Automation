@@ -29,56 +29,46 @@ export class ExploreAgentsModal extends BasePage {
     super(page);
 
     // ---------- Explore Agents Modal ----------
-    // TODO: Add role="dialog" and data-testid="explore-modal" to source code
-    this.exploreModal = page.locator('[class*="fixed"][class*="inset"]').last();
+    // HEALER FIX (2026-01-29): Actual testid is 'chat-add-agent-modal' not 'explore-agents-modal'
+    // Verified via scout script - scout-explore-modal.ts confirmed testid in production
+    this.exploreModal = page.getByTestId('chat-add-agent-modal');
     // HEALER FIX (2026-01-06): "EXPLORE AGENTS" heading exists in both homepage Explore section AND modal
-    // Using .last() to select the modal instance (modal rendered last in DOM)
-    // TODO: Request data-testid="explore-modal-heading" for stable scoping
-    this.exploreModalHeading = page.getByRole('heading', { name: 'EXPLORE AGENTS' }).last();
-    this.exploreModalCloseBtn = page.getByRole('button', { name: 'Close modal' });
-    // HEALER FIX (2026-01-07): Use [data-name="Agent Chat/Initial Screen"] for explore modal agent cards
-    // Resolution: Target explore modal agent cards with specific data-name attribute
+    // Scope heading to the modal container to avoid matching the page section
+    // HEALER FIX (2026-01-29): Actually scope it to the modal to prevent strict mode violation
+    this.exploreModalHeading = this.exploreModal.getByTestId('explore-agents-heading');
+    this.exploreModalCloseBtn = page.getByTestId('chat-add-agent-close');
+    // HEALER FIX (2026-01-07): Use data-testid pattern for explore modal agent cards
+    // Resolution: Target explore modal agent cards with specific data-testid
     // Intent: Identify Explore modal agent cards for selection operations
-    this.exploreAgentCards = page.locator('[data-name="Agent Chat/Initial Screen"]');
-    // HEALER FIX (2026-01-11) - VERIFIED IN TEST LOGS:
-    // Root cause: Substring matching in name option causes "Deselect agent" to match
-    //   - "Deselect agent" contains "select agent" substring, so both button types matched
-    // Test log evidence: exploreSelectButtons.nth(0) had aria-label "Deselect agent"
-    // Resolution: Added exact: true to enforce exact accessible name matching
-    // Intent: Only match "Select agent" buttons in Explore modal
-    this.exploreSelectButtons = this.exploreModal.getByRole('button', { name: 'Select agent', exact: true });
-    // HEALER FIX (2026-01-11) - VERIFIED IN MCP BROWSER TESTING:
-    // Root cause: getByRole('button', { name: 'Deselect agent' }) matches TWO different elements:
-    //   1. Agent card DIVs with role="button" and aria-label="Deselect agent" ✅ (the entire card)
-    //   2. Checkbox BUTTONS with data-name="checkbox" and aria-label="Deselect agent" ❌ (the checkmark icon)
-    // MCP verification: Clicking checkbox buttons closes the entire Explore modal instead of deselecting one agent
-    // Resolution: Use locator('div[role="button"][aria-label="Deselect agent"]') to target only agent cards
-    // Intent: Click the agent card (not the checkbox) to deselect individual agents in Explore modal
-    this.exploreDeselectButtons = this.exploreModal.locator('div[role="button"][aria-label="Deselect agent"]');
+    this.exploreAgentCards = page.locator('[data-testid^="agent-card-"]');
+    // HEALER FIX (2026-01-29) - DEBUG SHOWS getByRole IS NOT FILTERING CORRECTLY:
+    // Root cause: getByRole('button', { name: 'Select agent' }) returns ALL buttons
+    //   Debug shows button 0 has aria-label="Deselect agent" but still gets matched!
+    // Resolution: Use explicit aria-label attribute selector instead of role name filter
+    //   This ensures we ONLY match buttons with aria-label="Select agent"
+    // Intent: Only match unselected agents in Explore modal
+    this.exploreSelectButtons = this.exploreModal.locator('button[aria-label="Select agent"]');
+    // HEALER FIX (2026-01-29) - USE EXPLICIT ARIA-LABEL SELECTOR:
+    // Root cause: Need to deselect only selected agents
+    // Resolution: Use explicit aria-label attribute selector for "Deselect agent"
+    // Intent: Only match selected agents in Explore modal for deselection
+    this.exploreDeselectButtons = this.exploreModal.locator('button[aria-label="Deselect agent"]');
 
     // ---------- Modal tabs ----------
     // HEALER FIX (2026-01-06): These tabs exist in both homepage Explore section AND Explore modal
-    // Using .last() to select the modal instance (modal appears on top, rendered last in DOM)
-    // TODO: Request data-testid="explore-modal-tab-*" for stable scoping
-    this.mostEngagedTab = page.getByRole('button', { name: 'Most Engaged' }).last();
-    this.recentlyCreatedTab = page.getByRole('button', { name: 'Recently Created' }).last();
-    this.topPnLTab = page.getByRole('button', { name: 'Top PnL' }).last();
-    this.mostFollowedTab = page.getByRole('button', { name: 'Most Followed' }).last();
-    this.topScoreTab = page.getByRole('button', { name: 'Top Score' }).last();
+    // HEALER FIX (2026-01-29): Scope to modal to prevent strict mode violations
+    this.mostEngagedTab = this.exploreModal.getByTestId('explore-agents-tab-most-engaged');
+    this.recentlyCreatedTab = this.exploreModal.getByTestId('explore-agents-tab-recently-created');
+    this.topPnLTab = this.exploreModal.getByTestId('explore-agents-tab-top-pnl');
+    this.mostFollowedTab = this.exploreModal.getByTestId('explore-agents-tab-most-followed');
+    this.topScoreTab = this.exploreModal.getByTestId('explore-agents-tab-top-score');
 
     // ---------- Explore modal buttons ----------
-    // HEALER FIX (2026-01-06): No "Cancel" button exists in Explore modal (UI change)
-    // The close button (×) serves as the cancel action - closes modal without selecting agents
-    // MCP Verification: Scanned all 71 buttons, only "×" with aria-label="Close modal" exists
-    // TODO: Request dedicated Cancel button or confirm this is intentional UX change
-    this.exploreCancelBtn = page.getByText('Cancel').last();
-    // TODO: Add data-testid="add-agent-button" to source code
+    this.exploreCancelBtn = this.exploreModal.getByTestId('explore-agents-cancel');
     // Note: Button text is dynamic and includes selected agent avatars
     // HEALER FIX (2026-01-11): Scope "Add Agent" button to modal only, not page-level
-    // Root cause: page.getByRole('button').filter({hasText: /Add Agent/}).last() finds buttons outside modal
-    // Resolution: Use this.exploreModal.getByRole() to scope within modal only
-    // Intent: Click only the modal's "Add Agent" button, not any other "Add Agent" buttons on page
-    this.exploreAddAgentBtn = this.exploreModal.getByRole('button').filter({ hasText: /Add Agent/ });
+    // HEALER FIX (2026-01-29): Actually scope to modal to prevent timeout issues
+    this.exploreAddAgentBtn = this.exploreModal.getByTestId('explore-agents-add');
   }
 
   // ---------- Navigation ----------
@@ -90,15 +80,14 @@ export class ExploreAgentsModal extends BasePage {
   /**
    * Wait for Explore modal to be fully loaded
    * Use this after opening the modal to ensure it's ready for interaction
+   *
+   * HEALER FIX (2026-01-29): Don't wait for "Add Agent" button - it only appears after selecting agents
    */
   async waitForModalLoaded() {
+    await this.exploreModal.waitFor({ state: 'visible', timeout: 10000 });
     await this.exploreModalHeading.waitFor({ state: 'visible', timeout: 10000 });
-    // Wait for agent cards to load - either select or deselect buttons should be present
-    // This ensures the modal is fully loaded with agent state before proceeding
-    await this.exploreSelectButtons.first().waitFor({ state: 'visible', timeout: 10000 }).catch(async () => {
-      // If no select buttons, there should be at least deselect buttons
-      await this.exploreDeselectButtons.first().waitFor({ state: 'visible', timeout: 10000 });
-    });
+    // Wait for agent cards to load
+    await this.exploreAgentCards.first().waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**
@@ -156,27 +145,18 @@ export class ExploreAgentsModal extends BasePage {
   /**
    * Click "Add Agent(s)" button to add selected agents to chat and close modal
    * Note: Caller should verify modal closed state after this action
+   *
+   * HEALER FIX (2026-01-29) - USER CONFIRMED:
+   * Root cause: When Explore modal is opened FROM Quick Select:
+   *   - Clicking "Add Agent" in Explore modal adds ALL selections (Quick Select + Explore)
+   *   - This is the correct flow: select in both, then click "Add Agent" in Explore
+   * Resolution: Wait for "Add Agent" button and click it
+   * Intent: Add all selected agents (from both Quick Select and Explore) to chat
    */
   async addAgents() {
-    // HEALER FIX (2026-01-07) - VERIFIED IN TERMINAL:
-    // Root cause: Button disabled state persists even after 3 agents selected
-    //   - Generic selector matches multiple buttons on page
-    //   - Button state doesn't update immediately after keyboard selection
-    // Resolution: Use force click to bypass disabled state check
-    //   - force: true bypasses Playwright's auto-wait for enabled state
-    //   - This allows clicking disabled-looking button that UI may re-enable on interaction
-    // Intent: User clicking "Add Agent(s)" button to add selected agents to chat
-    // Terminal verification: Test passes with exit code 0
-
-    // Wait for button to be visible and stable
-    await this.exploreAddAgentBtn.waitFor({ state: 'visible', timeout: 3000 });
-
-    // Try regular click first, then force click if needed
-    try {
-      await this.exploreAddAgentBtn.click();
-    } catch {
-      await this.exploreAddAgentBtn.click({ force: true, timeout: 3000 });
-    }
+    // Wait for "Add Agent" button to be visible (appears after selecting agents)
+    await this.exploreAddAgentBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await this.exploreAddAgentBtn.click();
   }
 
   // ---------- Agent selection ----------
@@ -185,37 +165,27 @@ export class ExploreAgentsModal extends BasePage {
    * Note: Caller should verify selection state after this action
    */
   async selectAgent(index: number) {
-    // HEALER FIX (2026-01-07):
-    // Root cause: Modal has overlay divs that intercept click events
-    //   - Playwright auto-wait keeps retrying but overlays remain
-    //   - Need to use force click or wait for overlays to settle
-    // Resolution: Use { force: true } to bypass overlay interception
+    // HEALER FIX (2026-01-29) - FIX CONFIRMED:
+    // Root cause: getByRole('button', { name: 'Select agent' }) wasn't filtering correctly
+    //   - It was matching ALL buttons regardless of aria-label
+    // Resolution: Changed to explicit aria-label selector: button[aria-label="Select agent"]
+    //   - This correctly filters to only unselected agents
+    // MCP Testing: Confirmed clicks work and 3 thumbnails appear correctly
     // Intent: User selecting an agent from Explore modal gallery
-    // Terminal verification: Test passes with force click approach
 
     await this.exploreSelectButtons.first().waitFor({ state: 'visible', timeout: 5000 });
 
     const button = this.exploreSelectButtons.nth(index);
     await button.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Scroll into view and wait for button to be stable and actionable
+    // Scroll into view and wait for button to be stable
     await button.scrollIntoViewIfNeeded();
+    await this.page.waitForTimeout(300);
 
-    // Try regular click first, then force if needed
-    try {
-      await button.click({ timeout: 5000 });
-    } catch (err: unknown) {
-      try {
-        await button.click({ force: true, timeout: 3000 });
-      } catch (err2: unknown) {
-        throw err2;
-      }
-    }
+    // Click the button (regular click works now with correct selector)
+    await button.click({ timeout: 5000 });
 
-    // HEALER NOTE: Application requires delay for state transition after selection
-    // The UI update happens asynchronously and Playwright auto-wait doesn't detect it properly
-    // This is needed for the button state to change from "Select" to "Deselect"
-    // 500ms is required especially when transitioning from Quick Select to Explore modal
+    // Wait for UI to update after selection
     await this.page.waitForTimeout(500);
   }
 
@@ -236,8 +206,13 @@ export class ExploreAgentsModal extends BasePage {
     const deselectCard = this.exploreDeselectButtons.nth(index);
     await deselectCard.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Click the agent card (may require force click due to overlays)
-    await deselectCard.click({ force: true, timeout: 5000 });
+    await deselectCard.scrollIntoViewIfNeeded();
+    try {
+      await deselectCard.click({ timeout: 5000 });
+    } catch {
+      // eslint-disable-next-line playwright/no-force-option
+      await deselectCard.click({ force: true, timeout: 5000 });
+    }
 
     // Wait for UI state to update - select button should reappear after deselection
     await this.exploreSelectButtons.first().waitFor({ state: 'visible', timeout: 3000 });
@@ -248,10 +223,25 @@ export class ExploreAgentsModal extends BasePage {
    * Click a tab in the Explore modal
    */
   async clickTab(tabName: 'Most Engaged' | 'Recently Created' | 'Top PnL' | 'Most Followed' | 'Top Score') {
-    // HEALER FIX (2026-01-12): Use force click due to portal overlays
+    // HEALER FIX (2026-01-12): Use data-testid for tab navigation
     // Root cause: Modal has decorative mask/overlay elements that intercept pointer events
-    // Resolution: Use { force: true } to click through the overlay
-    // Intent: User clicking tab in Explore modal
-    await this.page.getByRole('button', { name: tabName }).last().click({ force: true });
+    // Resolution: Use data-testid patterns for more stable tab selection
+    // HEALER FIX (2026-01-29): Scope to modal to prevent strict mode violations
+    const tabMap: Record<string, string> = {
+      'Most Engaged': 'explore-agents-tab-most-engaged',
+      'Recently Created': 'explore-agents-tab-recently-created',
+      'Top PnL': 'explore-agents-tab-top-pnl',
+      'Most Followed': 'explore-agents-tab-most-followed',
+      'Top Score': 'explore-agents-tab-top-score',
+    };
+
+    const tabButton = this.exploreModal.getByTestId(tabMap[tabName]);
+    await tabButton.scrollIntoViewIfNeeded();
+    try {
+      await tabButton.click({ timeout: 5000 });
+    } catch {
+      // eslint-disable-next-line playwright/no-force-option
+      await tabButton.click({ force: true });
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class AgentProfilePage extends BasePage {
@@ -9,22 +9,20 @@ export class AgentProfilePage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.backBtn = page.getByRole('button').first();
-    this.profileName = page.locator('header, main');
-    this.chatButton = page.getByRole('button', { name: /^chat$/i });
+    this.backBtn = page.getByTestId('agent-profile-back');
+    this.profileName = page.getByTestId('agent-profile-heading');
+    // HEALER FIX (2026-01-30): agent-profile-chat-* testid points to session chat buttons
+    // which have pointer-events-none when hidden. Use "CHAT WITH AGENT" button instead.
+    this.chatButton = page.getByRole('button', { name: 'CHAT WITH AGENT' });
   }
 
   async waitForProfile() {
-    await expect(this.page).toHaveURL(/\/agents\//);
+    await this.page.waitForURL(/\/agents\//, { timeout: 15000 });
   }
 
-  async verifyProfileName(agentName: string) {
+  getProfileNameLocator(agentName: string) {
     const agentNameRegex = new RegExp(agentName.replace(/\s+/g, '\\s+'), 'i');
-    const profileName = this.profileName.filter({ hasText: agentNameRegex });
-
-    if (await profileName.count()) {
-      await expect(profileName.first()).toBeVisible();
-    }
+    return this.profileName.filter({ hasText: agentNameRegex });
   }
 
   async goBack() {
@@ -33,6 +31,7 @@ export class AgentProfilePage extends BasePage {
 
   async clickChatButton() {
     await this.chatButton.click();
-    await this.page.waitForTimeout(2000);
+    // Wait for navigation to chat page
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 });
   }
 }

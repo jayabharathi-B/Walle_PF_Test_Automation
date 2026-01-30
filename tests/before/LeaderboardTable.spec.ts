@@ -1,6 +1,5 @@
 import { test, expect } from '../../src/fixtures/home.fixture';
 
-test.describe.configure({ mode: 'serial' });
 // ============================================================
 // LEADERBOARD TABLE - STRUCTURE TESTS
 // ============================================================

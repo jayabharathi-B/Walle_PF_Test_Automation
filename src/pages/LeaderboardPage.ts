@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class LeaderboardPage extends BasePage {
@@ -38,32 +38,31 @@ export class LeaderboardPage extends BasePage {
     this.connectWalletBtn = page.getByTestId('main-header-connect-wallet-btn');
 
     // ---------- Bubbles of Fame section ----------
-    this.bubblesHeading = page.getByRole('heading', { name: 'BUBBLES OF FAME' });
-    this.topSelector = page.getByRole('button', { name: '20' });
+    this.bubblesHeading = page.getByTestId('leaderboard-bubbles-heading');
+    this.topSelector = page.getByTestId('leaderboard-top-selector-20');
 
     // ---------- Main leaderboard section ----------
-    // TODO: Add data-testid="leaderboard-heading" to isolate from multiple "LEADERBOARD" matches
-    this.leaderboardHeading = page.locator('p').filter({ hasText: 'LEADERBOARD' }).first();
+    this.leaderboardHeading = page.getByTestId('leaderboard-heading');
 
     // ---------- Table column headers (static text - safe to use) ----------
-    this.rankHeader = page.getByText('Rank');
-    this.agentNameHeader = page.getByText('Agent Name');
-    this.agentScoreHeader = page.getByText('Agent Score');
-    this.tradesHeader = page.getByText('Trades');
-    this.chatsHeader = page.getByText('Chats');
+    this.rankHeader = page.getByTestId('leaderboard-rank-label');
+    this.agentNameHeader = page.getByTestId('leaderboard-agent-name-label');
+    this.agentScoreHeader = page.getByTestId('leaderboard-agent-score-label');
+    this.tradesHeader = page.getByTestId('leaderboard-trades-label');
+    this.chatsHeader = page.getByTestId('leaderboard-chats-label');
 
     // ---------- Table data containers (for structure testing) ----------
     // DIV-based column layout: 5 flex-col columns containing 20 row items each
-    // Column 1: Rank (w-[82px])
-    this.rankDataColumn = page.locator('div[class*="w-\\[82px\\]"][class*="flex-col"]');
-    // Column 2: Agent Name (w-[372px])
-    this.agentNamesColumn = page.locator('div[class*="w-\\[372px\\]"][class*="flex-col"]');
-    // Column 3: Score (basis-0 grow, first of three)
-    this.scoresColumn = page.locator('div[class*="basis-0"][class*="grow"][class*="flex-col"]').nth(0);
-    // Column 4: Trades (basis-0 grow, second of three)
-    this.tradesColumn = page.locator('div[class*="basis-0"][class*="grow"][class*="flex-col"]').nth(1);
-    // Column 5: Chats (basis-0 grow, third of three)
-    this.chatsColumn = page.locator('div[class*="basis-0"][class*="grow"][class*="flex-col"]').nth(2);
+    // Column 1: Rank
+    this.rankDataColumn = page.getByTestId('leaderboard-rank-column');
+    // Column 2: Agent Name
+    this.agentNamesColumn = page.getByTestId('leaderboard-agent-name-column');
+    // Column 3: Score
+    this.scoresColumn = page.getByTestId('leaderboard-agent-score-column');
+    // Column 4: Trades
+    this.tradesColumn = page.getByTestId('leaderboard-trades-column');
+    // Column 5: Chats
+    this.chatsColumn = page.getByTestId('leaderboard-chats-column');
 
     // ---------- Agent Detail Panel Locators ----------
     // HEALER FIX (2026-01-05): Using getByRole after discovering button can be found this way.
@@ -71,18 +70,13 @@ export class LeaderboardPage extends BasePage {
     // This proves the button exists and is findable. Issue: button not appearing after click.
     // Possible causes: (1) Click not triggering panel, (2) Different test session state,
     // (3) Application logic issue with bubble click. For now, using the working locator.
-    // TODO: Add data-testid="agent-detail-panel" to source code
-    this.agentDetailPanel = page.locator('div').filter({
-      has: page.getByRole('button', { name: 'CHAT WITH AGENT' })
-    }).first();
+    this.agentDetailPanel = page.getByTestId('agent-hover-card');
 
-    // TODO: Add data-testid="chat-with-agent-btn" to source code
     this.chatWithAgentBtn = page.getByRole('button', { name: 'CHAT WITH AGENT' });
 
-    // TODO: Add data-testid="close-panel-btn" to source code
     // HEALER FIX (2026-01-05): The close button is a generic element (div/span), not a button.
-    // Using getByText with exact match for the × character.
-    this.closePanelBtn = this.agentDetailPanel.getByText('×', { exact: true });
+    // Using data-testid for more reliable access
+    this.closePanelBtn = page.getByTestId('agent-hover-card-close');
   }
 
   // ---------- Navigation ----------
@@ -97,19 +91,19 @@ export class LeaderboardPage extends BasePage {
     // causing toBeHidden() to timeout. The content may load before the loading text appears.
     // Resolution: Use graceful wait (allow timeout) for loading text, then ensure table is visible.
     // This matches the more robust strategy in waitForBubblesLoaded().
-    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-    await expect(this.leaderboardHeading).toBeVisible({ timeout: 15000 });
-    await expect(this.rankHeader).toBeVisible({ timeout: 15000 });
+    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 });
+    await this.leaderboardHeading.waitFor({ state: 'visible', timeout: 15000 });
+    await this.rankHeader.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   async waitForBubblesLoaded() {
     // HEALER FIX (2026-01-05): Use a more robust wait strategy.
     // Wait for loading text to be hidden OR just wait for the heading and content to appear.
     // Sometimes "Loading agents..." might not even show up if it's too fast.
-    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => { });
-    await expect(this.bubblesHeading).toBeVisible({ timeout: 15000 });
-    // CRITICAL: Ensure at least one bubble is present before proceeding
-    await expect(this.agentBubbles.first()).toBeVisible({ timeout: 15000 });
+    await this.page.getByText('Loading agents...').waitFor({ state: 'hidden', timeout: 10000 });
+    await this.bubblesHeading.waitFor({ state: 'visible', timeout: 15000 });
+    // CRITICAL: Ensure the bubbles map is present before proceeding
+    await this.page.getByTestId('leaderboard-bubbles-map').waitFor({ state: 'visible', timeout: 15000 });
   }
 
   // ---------- Table structure accessors (for testing) ----------
@@ -198,9 +192,7 @@ export class LeaderboardPage extends BasePage {
    * Get all agent bubbles in the carousel
    */
   get agentBubbles() {
-    return this.page.locator('div.rounded-full').filter({
-      has: this.page.locator('img[alt]')
-    });
+    return this.page.locator('[data-testid^="leaderboard-bubble-"]');
   }
 
   /**
@@ -220,15 +212,15 @@ export class LeaderboardPage extends BasePage {
     await this.bubblesHeading.scrollIntoViewIfNeeded();
     await bubble.dispatchEvent('click');
     // Wait for the panel to render and the button to become visible.
-    await expect(this.chatWithAgentBtn).toBeVisible({ timeout: 15000 });
+    await this.chatWithAgentBtn.waitFor({ state: 'visible', timeout: 15000 });
   }
 
   /**
    * Get agent name displayed in the detail panel
    */
   async getAgentNameFromPanel(): Promise<string> {
-    // The name is typically the first bold text or specific heading in the panel
-    const nameLocator = this.agentDetailPanel.locator('div').first();
+    // The name is displayed using data-testid
+    const nameLocator = this.page.getByTestId('agent-hover-card-name');
     return (await nameLocator.textContent())?.trim() || '';
   }
 
@@ -249,7 +241,7 @@ export class LeaderboardPage extends BasePage {
    */
   async closeAgentPanel() {
     await this.closePanelBtn.click();
-    await expect(this.agentDetailPanel).toBeHidden();
+    await this.agentDetailPanel.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- State management ----------
@@ -266,7 +258,7 @@ export class LeaderboardPage extends BasePage {
 
   async ensureNoModalOpen() {
     // Close any modal with Escape
-    await this.page.keyboard.press('Escape').catch(() => { });
-    await expect(this.page.locator('[role="dialog"]')).toBeHidden();
+    await this.page.keyboard.press('Escape');
+    await this.page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5000 });
   }
 }

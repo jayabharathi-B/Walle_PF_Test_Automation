@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { ConnectModal } from './ConnectModal';
 
@@ -38,30 +38,31 @@ export class HomePage extends BasePage {
     super(page);
 
     // ---------- Header / texts ----------
-    this.logo = page.getByAltText('Walle mascot').first();
+    this.logo = page.getByTestId('home-logo');
     this.welcomeText = page.getByTestId('page-title');
-    this.createAgentText = page.getByText('Create Your Agent');
-    this.exploreAgentsText = page.getByText('EXPLORE AGENTS');
+    this.createAgentText = page.getByTestId('home-create-agent-text');
+    this.exploreAgentsText = page.getByTestId('explore-agents-heading');
 
     // ---------- CTA buttons ----------
-    this.scanBestPerformersBtn = page.getByText('Scan Best Performers', { exact: true });
-    this.analyzeMarketSentimentBtn = page.getByText('Analyze Market Sentiment', { exact: true });
-    this.buildDefiStrategiesBtn = page.getByText('Build Defi Strategies', { exact: true });
-    this.deepAnalysisBtn = page.getByText('Deep analysis');
+    this.scanBestPerformersBtn = page.getByTestId('home-quick-action-scan');
+    this.analyzeMarketSentimentBtn = page.getByTestId('home-quick-action-analyze');
+    this.buildDefiStrategiesBtn = page.getByTestId('home-quick-action-build');
+    this.deepAnalysisBtn = page.getByTestId('home-deep-analysis-toggle');
 
     // ---------- Chain selector ----------
     this.chainDropdownTrigger = page.getByTestId('chain-dropdown-button');
-    this.chainDropdownMenu = page.locator('div.absolute.top-full.left-0');
+    this.chainDropdownMenu = page.getByTestId('chain-grid');
 
     // ---------- Scan input ----------
     this.scanInput = page.getByTestId('chat-input');
-    this.exampleContainer = page.locator('.example-questions-container');
-    this.popup = page.locator('.example-popup-container');
+    this.exampleContainer = page.getByTestId('home-example-container');
+    this.popup = page.getByTestId('home-example-popup');
 
     // ---------- Wallet ----------
-    this.walletInput = page.getByPlaceholder('Enter wallet address or domain (.eth, .sol, .crypto, etc.)');
-    this.searchButton = page.getByRole('button', { name: 'Search' });
-    this.inlineError = page.locator('p.text-red-400');
+    // HEALER FIX (2026-01-22): Placeholder text changed; use role+name regex for stability
+    this.walletInput = page.getByTestId('home-wallet-input');
+    this.searchButton = page.getByTestId('home-search-button');
+    this.inlineError = page.getByTestId('home-inline-error');
 
     // ---------- Connect wallet ----------
     this.connectWalletHeaderBtn = page.getByTestId('main-header-connect-wallet-btn');
@@ -70,8 +71,6 @@ export class HomePage extends BasePage {
     this.loginWithXBtn = page.getByRole('button', { name: 'Login with x' });
 
     // ---------- Signup ----------
-    // HEALER FIX: Original regex was overly strict with escaped parentheses
-    // Simplified to flexible case-insensitive pattern
     this.signupPrompt = page.getByText(/signup.*signin to continue/i);
 
     // ---------- Page Objects ----------
@@ -85,7 +84,7 @@ export class HomePage extends BasePage {
 
   // ---------- Example actions ----------
   plusButton(index = 0): Locator {
-    return this.exampleContainer.locator('button').nth(index);
+    return this.page.getByTestId('home-example-toggle');
   }
 
   async clickPlus(index = 0) {
@@ -94,19 +93,18 @@ export class HomePage extends BasePage {
 
   // ---------- Chain helpers ----------
   getChainOption(chain: string): Locator {
-    // HEALER FIX: Original locator used unstable parent selector (..)
-    // Changed to select button directly for better stability
-    return this.page.locator('button').filter({ hasText: chain }).first();
+    // HEALER FIX: Use data-testid pattern for chain options
+    return this.page.locator('[data-testid^="chain-option-"]').filter({ hasText: chain }).first();
   }
 
   getSelectedChain(chain: string): Locator {
-    return this.page.locator('button span', { hasText: chain });
+    return this.page.getByTestId('chain-dropdown-button').locator('span').filter({ hasText: chain });
   }
 
   async selectChain(chain: string) {
     await this.chainDropdownTrigger.click();
     // HEALER FIX: Added explicit wait before clicking to prevent timeout
-    await expect(this.getChainOption(chain)).toBeVisible({ timeout: 10000 });
+    await this.getChainOption(chain).waitFor({ state: 'visible', timeout: 10000 });
     await this.getChainOption(chain).click();
   }
 
@@ -128,12 +126,31 @@ export class HomePage extends BasePage {
     return this.searchButton;
   }
 
+  // ---------- Tooltip helpers ----------
+  getNavButton(buttonName: string): Locator {
+    return this.page.getByRole('button', { name: buttonName });
+  }
+
+  getNavTooltip(buttonName: string): Locator {
+    return this.page.locator('[data-testid^="sidebar-tooltip-"]').filter({ hasText: buttonName });
+  }
+
+  async hoverNavButtonGroup(buttonName: string) {
+    const btn = this.page.locator('[data-testid^="sidebar-nav-item-"]').filter({ hasText: buttonName });
+    await btn.hover();
+  }
+
+  async moveMouseAway() {
+    await this.page.mouse.move(0, 0);
+  }
+
   // ---------- Navbar navigation ----------
   async goToMyAgents() {
-    // HEALER FIX (2025-01-06):
-    // Root cause: Click completes but navigation may not finish before assertion
-    // Resolution: Wait for navigation URL to change using waitForLoadState which is more lenient
-    await this.page.getByTestId('sidebar-nav-item-agents').click();
+    // HEALER FIX (2026-01-21):
+    // Root cause: Fixed overlay modal may still be open after agent creation, blocking click
+    // Resolution: Use force: true to click through decorative overlay, then wait for navigation
+    // eslint-disable-next-line playwright/no-force-option
+    await this.page.getByTestId('sidebar-nav-item-agents').click({ force: true });
     await this.page.waitForURL(/\/my-agents/, { waitUntil: 'domcontentloaded', timeout: 15000 });
   }
 
@@ -155,7 +172,7 @@ export class HomePage extends BasePage {
     // Resolution: Click without waiting for navigation, as the URL doesn't change.
     await this.page.getByTestId('sidebar-nav-item-dashboard').click();
     // Allow any pending navigation to complete
-    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => { });
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 });
   }
 
 
@@ -186,41 +203,38 @@ export class HomePage extends BasePage {
     // Resolution: Navigate, wait for load, then close modals defensively
 
     await this.goto();
-    await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-    await this.page.waitForTimeout(1000); // Brief wait for page stabilization
+    await this.page.waitForLoadState('networkidle', { timeout: 10000 });
 
     await this.ensureNoModalOpen();
 
     // Wait for key element (welcome text) to be visible
-    await expect(this.welcomeText).toBeVisible({ timeout: 10000 });
+    await this.welcomeText.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async ensureNoModalOpen() {
     // Close any modal with Escape (defensive - don't fail if no modal)
-    await this.page.keyboard.press('Escape').catch(() => { });
-    await this.page.waitForTimeout(500);
-
-    // Check if dialog exists and is visible, only then assert it's hidden
     const dialog = this.page.locator('[role="dialog"]');
-    const isVisible = await dialog.isVisible().catch(() => false);
+
+    // Check if dialog exists and is visible, only then close it
+    const isVisible = await dialog.isVisible();
     if (isVisible) {
       await this.page.keyboard.press('Escape');
-      await expect(dialog).toBeHidden({ timeout: 5000 });
+      await dialog.waitFor({ state: 'hidden', timeout: 5000 });
     }
   }
 
   // ---------- Plus button actions ----------
   async clickPlusAndSelect(index: number, optionText: RegExp) {
     await this.clickPlus(index);
-    await expect(this.popup).toBeVisible();
+    await this.popup.waitFor({ state: 'visible', timeout: 5000 });
     await this.popup.getByText(optionText).click();
-    await expect(this.popup).toBeHidden();
+    await this.popup.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   // ---------- Create agent workflow ----------
   async createAgent(chain: string, walletAddress: string) {
     await this.selectChain(chain);
-    await expect(this.getSelectedChain(chain)).toBeVisible();
+    await this.getSelectedChain(chain).waitFor({ state: 'visible', timeout: 5000 });
     await this.enterWallet(walletAddress);
     await this.clickSearch();
   }
